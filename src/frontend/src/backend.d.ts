@@ -16,6 +16,7 @@ export class ExternalBlob {
 }
 export type Time = bigint;
 export interface FileEvent {
+    hash: string;
     user: Principal;
     fileName: string;
     fileId: string;
@@ -45,6 +46,7 @@ export interface UserProfile {
 export enum FileEventType {
     publicAccess = "publicAccess",
     preview = "preview",
+    delete_ = "delete",
     upload = "upload",
     download = "download"
 }

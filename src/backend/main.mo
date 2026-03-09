@@ -9,6 +9,7 @@ import Text "mo:core/Text";
 import Int "mo:core/Int";
 import Array "mo:core/Array";
 import Nat "mo:core/Nat";
+import Char "mo:core/Char";
 
 
 
@@ -16,7 +17,7 @@ actor {
   // Initialize the user system state
   let accessControlState = AccessControl.initState();
 
-  // Initialize auth (first caller becomes admin, others become users)
+  // Initialize authentication system (first caller becomes admin, others become users)
   public shared ({ caller }) func initializeAccessControl() : async () {
     AccessControl.initialize(accessControlState, caller);
   };
@@ -26,7 +27,7 @@ actor {
   };
 
   public shared ({ caller }) func assignCallerUserRole(user : Principal, role : AccessControl.UserRole) : async () {
-    // Admin-only check happens inside assignRole
+    // Admin-only check happens inside
     AccessControl.assignRole(accessControlState, caller, user, role);
   };
 
@@ -43,7 +44,7 @@ actor {
 
   public query ({ caller }) func getCallerUserProfile() : async ?UserProfile {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can access profiles");
+      Runtime.trap("Unauthorized: Only users can save profiles");
     };
     userProfiles.get(caller);
   };
@@ -93,6 +94,7 @@ actor {
     #download;
     #preview;
     #publicAccess;
+    #delete;
   };
 
   // File event record
@@ -102,6 +104,7 @@ actor {
     fileName : Text;
     timestamp : Time.Time;
     user : Principal;
+    hash : Text;
   };
 
   // Document storage
@@ -275,7 +278,6 @@ actor {
 
   // Get document metadata with access code - PUBLIC ACCESS (guests allowed)
   public query func getDocumentMetadataWithCode(code : Text) : async ?DocumentMetadata {
-    // No authentication required - accessible to all users including guests
     switch (accessCodeMap.get(code)) {
       case (null) { null };
       case (?id) {
@@ -295,7 +297,6 @@ actor {
 
   // Validate access code - PUBLIC ACCESS (guests allowed)
   public query func validateAccessCode(code : Text) : async Bool {
-    // No authentication required - accessible to all users including guests
     switch (accessCodeMap.get(code)) {
       case (null) { false };
       case (?id) {
@@ -309,7 +310,6 @@ actor {
 
   // Get document encryption key with code - PUBLIC ACCESS (guests allowed)
   public query func getDocumentEncryptionKeyWithCode(code : Text) : async ?Text {
-    // No authentication required - accessible to all users including guests
     switch (accessCodeMap.get(code)) {
       case (null) { null };
       case (?id) {
@@ -351,6 +351,9 @@ actor {
           Nat.sub(currentUsage, metadata.fileSize);
         } else { 0 };
         userStorageUsage.add(caller, newUsage);
+
+        // Record delete event
+        recordFileEvent(caller, #delete, id, metadata.filename);
       };
     };
   };
@@ -472,7 +475,6 @@ actor {
     blob : Storage.ExternalBlob;
     mimeType : Text;
   } {
-    // No authentication required - accessible to all users including guests
     switch (accessCodeMap.get(code)) {
       case (null) { null };
       case (?id) {
@@ -507,9 +509,7 @@ actor {
   };
 
   // Record public preview event with access code (update call) - PUBLIC ACCESS (guests allowed)
-  public query func recordPublicPreview(code : Text) : async () {
-    // No authentication required - accessible to all users including guests
-    // Caller context included for potential future auditing
+  public shared func recordPublicPreview(code : Text) : async () {
     switch (accessCodeMap.get(code)) {
       case (null) { Runtime.trap("Invalid access code") };
       case (?id) {
@@ -533,7 +533,6 @@ actor {
     filename : Text;
     mimeType : Text;
   } {
-    // No authentication required - accessible to all users including guests
     switch (accessCodeMap.get(code)) {
       case (null) { null };
       case (?id) {
@@ -556,9 +555,7 @@ actor {
   };
 
   // Record public download event with access code (update call) - PUBLIC ACCESS (guests allowed)
-  public query func recordPublicDownload(code : Text) : async () {
-    // No authentication required - accessible to all users including guests
-    // Caller context included for potential future auditing
+  public shared func recordPublicDownload(code : Text) : async () {
     switch (accessCodeMap.get(code)) {
       case (null) { Runtime.trap("Invalid access code") };
       case (?id) {
@@ -581,7 +578,6 @@ actor {
     totalFiles : Nat;
     totalStorage : Nat;
   } {
-    // No authentication required - accessible to all users including guests
     let totalFiles = documents.size();
     let totalStorage = documents.foldLeft(
       0,
@@ -623,14 +619,53 @@ actor {
     };
   };
 
-  // Record file event - internal function (no authorization needed)
+  // Generate deterministic event hash (Internal)
+  func generateEventHash(eventType : Text, fileId : Text, timestamp : Int, user : Principal) : Text {
+    let input = eventType.concat(fileId).concat(timestamp.toText()).concat(user.toText());
+    let inputChars = input.toArray();
+
+    let hashChars = Array.tabulate(
+      32,
+      func(i) {
+        let idx1 = Int.abs(i) % inputChars.size();
+        let idx2 = (Int.abs(i + 1) % inputChars.size() + 1) % inputChars.size();
+        let char1 = inputChars[idx1];
+        let char2 = inputChars[idx2];
+        let combinedCode = (char1.toNat32() + char2.toNat32()) % 16;
+        let hexChar = if (combinedCode < 10) {
+          Char.fromNat32(combinedCode + 48);
+        } else {
+          Char.fromNat32(combinedCode - 10 + 97);
+        };
+        hexChar;
+      },
+    );
+
+    Text.fromArray(hashChars);
+  };
+
+  // Convert FileEventType to Text
+  func eventTypeToText(eventType : FileEventType) : Text {
+    switch (eventType) {
+      case (#upload) { "upload" };
+      case (#download) { "download" };
+      case (#preview) { "preview" };
+      case (#publicAccess) { "publicAccess" };
+      case (#delete) { "delete" };
+    };
+  };
+
+  // Record file event - internal function
   func recordFileEvent(user : Principal, eventType : FileEventType, fileId : Text, fileName : Text) {
+    let timestamp = Time.now();
+    let eventHash = generateEventHash(eventTypeToText(eventType), fileId, timestamp, user);
     let event : FileEvent = {
       eventType;
       fileId;
       fileName;
-      timestamp = Time.now();
+      timestamp;
       user;
+      hash = eventHash;
     };
 
     let existingEvents = switch (fileHistory.get(fileId)) {
@@ -642,18 +677,22 @@ actor {
     fileHistory.add(fileId, updatedEvents);
   };
 
-  // Get file history - USER ONLY (returns only caller's file events)
+  // Get file history - USER ONLY
   public query ({ caller }) func getFileHistory() : async [FileEvent] {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
       Runtime.trap("Unauthorized: Only users can view file history");
     };
 
-    // Collect all events from files owned by the caller
     var userEvents : [FileEvent] = [];
     for ((fileId, events) in fileHistory.entries()) {
-      // Check if this file belongs to the caller
       switch (documents.get(fileId)) {
-        case (null) { /* File may have been deleted, skip */ };
+        case (null) { 
+          // File may have been deleted, but still include events if user was the owner
+          let firstEvent = events.find(func(e) { e.user == caller });
+          if (firstEvent != null) {
+            userEvents := userEvents.concat(events.filter(func(e) { e.user == caller }));
+          };
+        };
         case (?metadata) {
           if (metadata.owner == caller) {
             userEvents := userEvents.concat(events);
@@ -662,22 +701,25 @@ actor {
       };
     };
 
-    // Sort events by timestamp in descending order (newest first)
     userEvents.sort(func(a, b) { if (a.timestamp > b.timestamp) { #less } else if (a.timestamp < b.timestamp) { #greater } else { #equal } });
   };
 
-  // Get file history by event type - USER ONLY (returns only caller's file events)
+  // Get file history by event type - USER ONLY
   public query ({ caller }) func getFileHistoryByType(eventType : FileEventType) : async [FileEvent] {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
       Runtime.trap("Unauthorized: Only users can view file history");
     };
 
-    // Collect all events from files owned by the caller
     var userEvents : [FileEvent] = [];
     for ((fileId, events) in fileHistory.entries()) {
-      // Check if this file belongs to the caller
       switch (documents.get(fileId)) {
-        case (null) { /* File may have been deleted, skip */ };
+        case (null) { 
+          // File may have been deleted, but still include events if user was the owner
+          let firstEvent = events.find(func(e) { e.user == caller });
+          if (firstEvent != null) {
+            userEvents := userEvents.concat(events.filter(func(e) { e.user == caller }));
+          };
+        };
         case (?metadata) {
           if (metadata.owner == caller) {
             userEvents := userEvents.concat(events);
@@ -686,10 +728,8 @@ actor {
       };
     };
 
-    // Filter by event type
     let filteredEvents = userEvents.filter(func(event) { event.eventType == eventType });
 
-    // Sort events by timestamp in descending order (newest first)
     filteredEvents.sort(func(a, b) { if (a.timestamp > b.timestamp) { #less } else if (a.timestamp < b.timestamp) { #greater } else { #equal } });
   };
 
@@ -699,11 +739,20 @@ actor {
       Runtime.trap("Unauthorized: Only users can view file history");
     };
 
-    // Verify the caller owns this file
     switch (documents.get(fileId)) {
       case (null) {
-        // File doesn't exist or was deleted, return empty array
-        [];
+        // File doesn't exist or was deleted, check if caller owns any events
+        switch (fileHistory.get(fileId)) {
+          case (null) { [] };
+          case (?events) {
+            let userEvents = events.filter(func(e) { e.user == caller });
+            if (userEvents.size() > 0 or AccessControl.isAdmin(accessControlState, caller)) {
+              events.sort(func(a, b) { if (a.timestamp > b.timestamp) { #less } else if (a.timestamp < b.timestamp) { #greater } else { #equal } });
+            } else {
+              Runtime.trap("Unauthorized: Can only view history for your own files");
+            };
+          };
+        };
       };
       case (?metadata) {
         if (metadata.owner != caller and not AccessControl.isAdmin(accessControlState, caller)) {
@@ -713,7 +762,6 @@ actor {
         switch (fileHistory.get(fileId)) {
           case (null) { [] };
           case (?events) {
-            // Sort events by timestamp in descending order (newest first)
             events.sort(func(a, b) { if (a.timestamp > b.timestamp) { #less } else if (a.timestamp < b.timestamp) { #greater } else { #equal } });
           };
         };

@@ -27,6 +27,7 @@ import {
   Eye,
   Globe,
   History,
+  Trash2,
   Upload,
 } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -49,6 +50,8 @@ export default function FileHistory() {
         return <Eye className="h-4 w-4 text-white" />;
       case FileEventType.publicAccess:
         return <Globe className="h-4 w-4 text-white" />;
+      case FileEventType.delete_:
+        return <Trash2 className="h-4 w-4 text-white" />;
       default:
         return <History className="h-4 w-4 text-white" />;
     }
@@ -64,6 +67,8 @@ export default function FileHistory() {
         return "Preview";
       case FileEventType.publicAccess:
         return "Code Access";
+      case FileEventType.delete_:
+        return "Delete";
       default:
         return "Unknown";
     }
@@ -81,6 +86,8 @@ export default function FileHistory() {
         return "outline";
       case FileEventType.publicAccess:
         return "outline";
+      case FileEventType.delete_:
+        return "destructive";
       default:
         return "outline";
     }
@@ -231,6 +238,9 @@ export default function FileHistory() {
                 >
                   Code Access
                 </SelectItem>
+                <SelectItem value={FileEventType.delete_} className="font-bold">
+                  Deletes
+                </SelectItem>
               </SelectContent>
             </Select>
             <Select
@@ -283,6 +293,9 @@ export default function FileHistory() {
                 <TableHead className="font-display font-bold text-base text-foreground">
                   Time
                 </TableHead>
+                <TableHead className="font-display font-bold text-base text-foreground">
+                  Hash
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -312,6 +325,21 @@ export default function FileHistory() {
                     </TableCell>
                     <TableCell className="font-mono text-sm font-medium text-muted-foreground">
                       {time}
+                    </TableCell>
+                    <TableCell>
+                      {event.hash ? (
+                        <a
+                          href={`https://dashboard.internetcomputer.org/transaction/${event.hash}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          title={event.hash}
+                          className="font-mono text-xs text-primary hover:underline"
+                        >
+                          {event.hash.slice(0, 12)}...
+                        </a>
+                      ) : (
+                        <span className="text-muted-foreground text-xs">—</span>
+                      )}
                     </TableCell>
                   </TableRow>
                 );
