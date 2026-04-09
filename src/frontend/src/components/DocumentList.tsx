@@ -268,11 +268,13 @@ function EditorPopover({
 interface DocumentListProps {
   documents: DocumentMetadata[];
   isLoading: boolean;
+  searchQuery?: string;
 }
 
 export default function DocumentList({
   documents,
   isLoading,
+  searchQuery = "",
 }: DocumentListProps) {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [previewDoc, setPreviewDoc] = useState<DocumentMetadata | null>(null);
@@ -387,6 +389,7 @@ export default function DocumentList({
   }
 
   if (documents.length === 0) {
+    const isSearching = searchQuery.trim().length > 0;
     return (
       <Card className="card-elevated border-border" data-ocid="empty-state">
         <CardContent className="flex flex-col items-center justify-center py-20 text-center">
@@ -394,15 +397,19 @@ export default function DocumentList({
             <FileText className="h-8 w-8 text-muted-foreground" />
           </div>
           <h3 className="text-xl font-display font-semibold text-foreground mb-2">
-            No documents yet
+            {isSearching ? "No matching documents" : "No documents yet"}
           </h3>
           <p className="text-muted-foreground text-sm max-w-xs">
-            Upload your first document to start using secure decentralized
-            storage.
+            {isSearching
+              ? `No files match "${searchQuery}". Try a different search term or clear your filters.`
+              : "Upload your first document to start using secure decentralized storage."}
           </p>
-          <p className="text-muted-foreground text-xs mt-2 max-w-xs">
-            Add your first tag to organize files once you've uploaded documents.
-          </p>
+          {!isSearching && (
+            <p className="text-muted-foreground text-xs mt-2 max-w-xs">
+              Add folders and tags to organize files once you've uploaded
+              documents.
+            </p>
+          )}
         </CardContent>
       </Card>
     );
@@ -426,8 +433,8 @@ export default function DocumentList({
         data-ocid="document-grid"
       >
         {documents.map((doc) => {
-          const docFolders = doc.folders ?? [];
-          const docTags = doc.tags ?? [];
+          const docFolders = Array.isArray(doc.folders) ? doc.folders : [];
+          const docTags = Array.isArray(doc.tags) ? doc.tags : [];
 
           return (
             <Card

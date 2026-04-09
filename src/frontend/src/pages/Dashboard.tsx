@@ -8,12 +8,14 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
 import {
   BarChart3,
   ChevronDown,
   Files,
   FolderOpen,
   History,
+  Search,
   Tag,
   Upload,
   X,
@@ -45,21 +47,36 @@ export default function Dashboard() {
   const [activeTab, setActiveTab] = useState<TabId>("documents");
   const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const filteredDocuments = useMemo(() => {
     const docs = documents ?? [];
+    const q = searchQuery.trim().toLowerCase();
     return docs.filter((doc) => {
       const folders = doc.folders ?? [];
       const tags = doc.tags ?? [];
+
+      // Folder filter
       if (selectedFolder && !folders.includes(selectedFolder)) return false;
+
+      // Tag filter (AND logic)
       if (
         selectedTags.length > 0 &&
         !selectedTags.every((t) => tags.includes(t))
       )
         return false;
+
+      // Search filter — filename, folder names, tag names
+      if (q) {
+        const inFilename = doc.filename.toLowerCase().includes(q);
+        const inFolders = folders.some((f) => f.toLowerCase().includes(q));
+        const inTags = tags.some((t) => t.toLowerCase().includes(q));
+        if (!inFilename && !inFolders && !inTags) return false;
+      }
+
       return true;
     });
-  }, [documents, selectedFolder, selectedTags]);
+  }, [documents, selectedFolder, selectedTags, searchQuery]);
 
   const toggleTag = (tag: string) => {
     setSelectedTags((prev) =>
@@ -70,21 +87,56 @@ export default function Dashboard() {
   const clearFilters = () => {
     setSelectedFolder(null);
     setSelectedTags([]);
+    setSearchQuery("");
   };
 
-  const hasFilters = selectedFolder !== null || selectedTags.length > 0;
+  const hasFilters =
+    selectedFolder !== null ||
+    selectedTags.length > 0 ||
+    searchQuery.trim() !== "";
+
+  const docCount = documents?.length ?? 0;
 
   return (
     <div className="animate-fade-in">
       {/* Page header */}
       <div className="bg-card border-b border-border">
-        <div className="container px-4 md:px-6 py-6">
-          <h1 className="text-2xl font-display font-bold text-foreground tracking-tight">
-            Document Dashboard
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1 font-body">
-            Manage your secure documents
-          </p>
+        <div className="container px-4 md:px-6 py-5">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+            <div className="flex-1 min-w-0">
+              <h1 className="text-2xl font-display font-bold text-foreground tracking-tight">
+                Document Dashboard
+              </h1>
+              <p className="text-sm text-muted-foreground mt-0.5 font-body">
+                Manage your secure documents
+              </p>
+            </div>
+
+            {/* Search bar — always visible in header */}
+            <div className="relative w-full sm:w-72" data-ocid="search-bar">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+              <Input
+                type="search"
+                placeholder="Search by name, folder, or tag…"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9 pr-8 h-9 border-border bg-background text-foreground placeholder:text-muted-foreground focus-visible:ring-accent/30 focus-visible:border-accent text-sm"
+                aria-label="Search documents"
+                data-ocid="search-input"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  aria-label="Clear search"
+                  data-ocid="search-clear"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </div>
+          </div>
         </div>
 
         {/* Tab bar */}
@@ -123,44 +175,44 @@ export default function Dashboard() {
         <div className="container px-4 md:px-6 py-8">
           {activeTab === "documents" && (
             <div className="space-y-4">
-              {/* Filter controls */}
-              {(allFolders.length > 0 || allTags.length > 0) && (
+              {/* Filter toolbar — always visible when user has any documents */}
+              {docCount > 0 && (
                 <div
                   className="flex flex-wrap items-center gap-2 p-3 rounded-xl border border-border bg-card"
                   data-ocid="filter-controls"
                 >
                   {/* Folder filter */}
-                  {allFolders.length > 0 && (
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          className={`gap-1.5 border-border text-sm font-medium ${selectedFolder ? "border-accent/50 text-accent bg-accent/5" : ""}`}
-                          data-ocid="folder-filter"
-                        >
-                          <FolderOpen className="h-3.5 w-3.5" />
-                          {selectedFolder ?? "All Folders"}
-                          <ChevronDown className="h-3.5 w-3.5 ml-0.5" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent
-                        className="bg-card border-border shadow-deep"
-                        align="start"
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className={`gap-1.5 border-border text-sm font-medium ${selectedFolder ? "border-accent/50 text-accent bg-accent/5" : ""}`}
+                        data-ocid="folder-filter"
                       >
-                        <DropdownMenuLabel className="text-xs text-muted-foreground">
-                          Filter by folder
-                        </DropdownMenuLabel>
-                        <DropdownMenuSeparator className="bg-border" />
-                        <DropdownMenuCheckboxItem
-                          checked={selectedFolder === null}
-                          onCheckedChange={() => setSelectedFolder(null)}
-                          className="text-sm"
-                        >
-                          All Folders
-                        </DropdownMenuCheckboxItem>
-                        {allFolders.map((f) => (
+                        <FolderOpen className="h-3.5 w-3.5" />
+                        {selectedFolder ?? "All Folders"}
+                        <ChevronDown className="h-3.5 w-3.5 ml-0.5" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent
+                      className="bg-card border-border shadow-deep"
+                      align="start"
+                    >
+                      <DropdownMenuLabel className="text-xs text-muted-foreground">
+                        Filter by folder
+                      </DropdownMenuLabel>
+                      <DropdownMenuSeparator className="bg-border" />
+                      <DropdownMenuCheckboxItem
+                        checked={selectedFolder === null}
+                        onCheckedChange={() => setSelectedFolder(null)}
+                        className="text-sm"
+                      >
+                        All Folders
+                      </DropdownMenuCheckboxItem>
+                      {allFolders.length > 0 ? (
+                        allFolders.map((f) => (
                           <DropdownMenuCheckboxItem
                             key={f}
                             checked={selectedFolder === f}
@@ -171,38 +223,43 @@ export default function Dashboard() {
                           >
                             {f}
                           </DropdownMenuCheckboxItem>
-                        ))}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  )}
+                        ))
+                      ) : (
+                        <div className="px-3 py-2 text-xs text-muted-foreground italic">
+                          No folders yet — add one via the pencil icon on a file
+                          card
+                        </div>
+                      )}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
 
                   {/* Tag filter */}
-                  {allTags.length > 0 && (
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          className={`gap-1.5 border-border text-sm font-medium ${selectedTags.length > 0 ? "border-accent/50 text-accent bg-accent/5" : ""}`}
-                          data-ocid="tag-filter"
-                        >
-                          <Tag className="h-3.5 w-3.5" />
-                          {selectedTags.length > 0
-                            ? `${selectedTags.length} tag${selectedTags.length > 1 ? "s" : ""}`
-                            : "All Tags"}
-                          <ChevronDown className="h-3.5 w-3.5 ml-0.5" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent
-                        className="bg-card border-border shadow-deep"
-                        align="start"
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className={`gap-1.5 border-border text-sm font-medium ${selectedTags.length > 0 ? "border-accent/50 text-accent bg-accent/5" : ""}`}
+                        data-ocid="tag-filter"
                       >
-                        <DropdownMenuLabel className="text-xs text-muted-foreground">
-                          Filter by tag
-                        </DropdownMenuLabel>
-                        <DropdownMenuSeparator className="bg-border" />
-                        {allTags.map((tag) => (
+                        <Tag className="h-3.5 w-3.5" />
+                        {selectedTags.length > 0
+                          ? `${selectedTags.length} tag${selectedTags.length > 1 ? "s" : ""}`
+                          : "All Tags"}
+                        <ChevronDown className="h-3.5 w-3.5 ml-0.5" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent
+                      className="bg-card border-border shadow-deep"
+                      align="start"
+                    >
+                      <DropdownMenuLabel className="text-xs text-muted-foreground">
+                        Filter by tag
+                      </DropdownMenuLabel>
+                      <DropdownMenuSeparator className="bg-border" />
+                      {allTags.length > 0 ? (
+                        allTags.map((tag) => (
                           <DropdownMenuCheckboxItem
                             key={tag}
                             checked={selectedTags.includes(tag)}
@@ -211,10 +268,15 @@ export default function Dashboard() {
                           >
                             {tag}
                           </DropdownMenuCheckboxItem>
-                        ))}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  )}
+                        ))
+                      ) : (
+                        <div className="px-3 py-2 text-xs text-muted-foreground italic">
+                          No tags yet — add one via the pencil icon on a file
+                          card
+                        </div>
+                      )}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
 
                   {/* Active filter pills */}
                   {selectedFolder && (
@@ -263,12 +325,12 @@ export default function Dashboard() {
                       data-ocid="clear-filters"
                     >
                       <X className="h-3 w-3" />
-                      Clear
+                      Clear all
                     </Button>
                   )}
 
                   <span className="ml-auto text-xs text-muted-foreground tabular-nums">
-                    {filteredDocuments.length} of {(documents ?? []).length}
+                    {filteredDocuments.length} of {docCount}
                   </span>
                 </div>
               )}
@@ -276,6 +338,7 @@ export default function Dashboard() {
               <DocumentList
                 documents={filteredDocuments}
                 isLoading={isLoading}
+                searchQuery={searchQuery}
               />
             </div>
           )}
