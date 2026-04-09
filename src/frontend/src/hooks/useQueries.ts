@@ -1,11 +1,15 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import type { ExternalBlob } from "../backend";
 import type {
+  DocumentFile,
   DocumentMetadata,
   FileEvent,
   FileEventType,
+  GlobalAnalytics,
+  StorageLimitCheck,
+  UserAnalytics,
   UserProfile,
-} from "../backend";
-import type { ExternalBlob } from "../backend";
+} from "../types";
 import { useActor } from "./useActor";
 import { useInternetIdentity } from "./useInternetIdentity";
 
@@ -409,7 +413,7 @@ export function useDownloadDocumentWithCode() {
 export function useGetGlobalAnalytics() {
   const { actor, isFetching: actorFetching } = useActor();
 
-  return useQuery<{ totalFiles: bigint; totalStorage: bigint }>({
+  return useQuery<GlobalAnalytics>({
     queryKey: ["globalAnalytics"],
     queryFn: async () => {
       if (!actor) throw new Error("Actor not available");
@@ -436,7 +440,7 @@ export function useGetUserAnalytics() {
 
   const isAuthenticated = !!identity && !identity.getPrincipal().isAnonymous();
 
-  return useQuery<{ userFiles: bigint; userStorage: bigint }>({
+  return useQuery<UserAnalytics>({
     queryKey: ["userAnalytics", identity?.getPrincipal().toString()],
     queryFn: async () => {
       if (!actor) throw new Error("Actor not available");

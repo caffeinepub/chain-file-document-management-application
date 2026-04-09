@@ -100,7 +100,6 @@ export interface backendInterface {
         userFiles: bigint;
     }>;
     getUserProfile(user: Principal): Promise<UserProfile | null>;
-    initializeAccessControl(): Promise<void>;
     isCallerAdmin(): Promise<boolean>;
     listUserDocuments(): Promise<Array<DocumentMetadata>>;
     recordDocumentDownload(id: string): Promise<void>;

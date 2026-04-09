@@ -30,7 +30,7 @@ export default function DocumentPreviewModal({
 }: DocumentPreviewModalProps) {
   const [previewError, setPreviewError] = useState<string | null>(null);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: reset preview error when blobUrl changes
+  // biome-ignore lint/correctness/useExhaustiveDependencies: reset on blobUrl change
   useEffect(() => {
     setPreviewError(null);
   }, [blobUrl]);
@@ -48,30 +48,28 @@ export default function DocumentPreviewModal({
       return (
         <div className="flex h-[60vh] items-center justify-center">
           <div className="text-center">
-            <div className="mb-4 h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent mx-auto" />
-            <p className="text-sm text-muted-foreground">Loading preview...</p>
+            <div className="mb-3 h-8 w-8 animate-spin rounded-full border-4 border-accent border-t-transparent mx-auto" />
+            <p className="text-sm text-muted-foreground">Loading preview…</p>
           </div>
         </div>
       );
     }
-
     if (error) {
       return (
         <div className="flex h-[60vh] items-center justify-center p-4">
-          <Alert variant="destructive">
+          <Alert variant="destructive" className="border-destructive/40">
             <AlertCircle className="h-4 w-4" />
-            <AlertDescription>{error}</AlertDescription>
+            <AlertDescription className="text-sm">{error}</AlertDescription>
           </Alert>
         </div>
       );
     }
-
     if (!isSupported) {
       return (
         <div className="flex h-[60vh] items-center justify-center p-4">
-          <Alert>
+          <Alert className="border-border bg-muted/30">
             <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
+            <AlertDescription className="text-sm">
               Preview not available for this file type. Please download the file
               to view it.
             </AlertDescription>
@@ -79,7 +77,6 @@ export default function DocumentPreviewModal({
         </div>
       );
     }
-
     if (!blobUrl) {
       return (
         <div className="flex h-[60vh] items-center justify-center">
@@ -87,23 +84,20 @@ export default function DocumentPreviewModal({
         </div>
       );
     }
-
     if (previewError) {
       return (
         <div className="flex h-[60vh] items-center justify-center p-4">
-          <Alert variant="destructive">
+          <Alert variant="destructive" className="border-destructive/40">
             <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
+            <AlertDescription className="text-sm">
               {mimeType === "application/pdf"
-                ? "Failed to load PDF preview. Your browser may not support inline PDF viewing. Please try downloading the file to view it."
+                ? "Failed to load PDF preview. Try downloading the file to view it."
                 : "Failed to load preview. Please try downloading the file."}
             </AlertDescription>
           </Alert>
         </div>
       );
     }
-
-    // Render based on MIME type
     if (mimeType === "application/pdf") {
       return (
         <div className="h-[600px] w-full">
@@ -112,17 +106,16 @@ export default function DocumentPreviewModal({
             type="application/pdf"
             width="100%"
             height="600px"
-            className="rounded-md border"
+            className="rounded-md border border-border"
             title={`Preview of ${filename}`}
             onError={() => setPreviewError("Failed to load PDF preview")}
           />
         </div>
       );
     }
-
     if (mimeType === "image/png" || mimeType === "image/jpeg") {
       return (
-        <div className="flex h-[70vh] items-center justify-center bg-muted/30 rounded-md">
+        <div className="flex h-[70vh] items-center justify-center bg-muted/30 rounded-md border border-border">
           <img
             src={blobUrl}
             alt={filename}
@@ -132,32 +125,36 @@ export default function DocumentPreviewModal({
         </div>
       );
     }
-
     if (mimeType === "text/plain") {
       return (
         <iframe
           src={blobUrl}
-          className="h-[70vh] w-full rounded-md border bg-background"
+          className="h-[70vh] w-full rounded-md border border-border bg-background"
           title={`Preview of ${filename}`}
           onError={() => setPreviewError("Failed to load text preview")}
         />
       );
     }
-
     return null;
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+      <DialogContent
+        className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col bg-card border-border shadow-deep"
+        data-ocid="preview-modal"
+      >
         <DialogHeader>
-          <div className="flex items-center justify-between">
-            <DialogTitle className="truncate pr-8">{filename}</DialogTitle>
+          <div className="flex items-center justify-between pr-8">
+            <DialogTitle className="truncate font-display font-semibold text-foreground text-base">
+              {filename}
+            </DialogTitle>
             <Button
               variant="ghost"
               size="icon"
               onClick={onClose}
-              className="absolute right-4 top-4"
+              className="absolute right-4 top-4 h-7 w-7 rounded-md hover:bg-muted"
+              aria-label="Close preview"
             >
               <X className="h-4 w-4" />
             </Button>

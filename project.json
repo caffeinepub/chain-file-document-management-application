@@ -1,0 +1,27 @@
+{
+  "overview": "Chain File is a decentralized document management app built on the Internet Computer. Users can securely upload, preview, share, and download files using unique access codes. Features include 1 GB free storage, encrypted file storage, ICP crypto payments for expanded capacity, file history with on-chain hashes, and real-time analytics.",
+  "features": [
+    "Secure file upload with auto-generated access codes",
+    "File preview and download (PDF, images, text)",
+    "Decentralized storage on the Internet Computer",
+    "1 GB free storage per user with crypto payment unlock",
+    "ICP wallet payments via Plug, Stoic, and Internet Identity",
+    "File history with timestamped events and on-chain hash links",
+    "Real-time user and global analytics",
+    "Tabbed dashboard with Documents, Upload, Analytics, and History",
+    "Account dropdown with Dashboard navigation and logout",
+    "Custom metallic 3D logo with matching browser favicon"
+  ],
+  "category": "productivity",
+  "tags": [
+    "file-storage",
+    "decentralized",
+    "icp",
+    "crypto-payments",
+    "document-management",
+    "access-codes",
+    "blockchain",
+    "web3"
+  ],
+  "last_updated": "2026-04-09T00:05:00.954Z"
+}

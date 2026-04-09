@@ -1,12 +1,6 @@
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   AlertCircle,
@@ -18,18 +12,12 @@ import {
 import { useGetGlobalAnalytics } from "../hooks/useQueries";
 
 function formatBytes(bytes: bigint): string {
-  const numBytes = Number(bytes);
-  if (numBytes === 0) return "0 Bytes";
-
+  const n = Number(bytes);
+  if (n === 0) return "0 B";
   const k = 1024;
-  const sizes = ["Bytes", "KB", "MB", "GB", "TB"];
-  const i = Math.floor(Math.log(numBytes) / Math.log(k));
-
-  return `${(numBytes / k ** i).toFixed(2)} ${sizes[i]}`;
-}
-
-function formatNumber(num: bigint): string {
-  return Number(num).toLocaleString();
+  const sizes = ["B", "KB", "MB", "GB", "TB"];
+  const i = Math.floor(Math.log(n) / Math.log(k));
+  return `${(n / k ** i).toFixed(2)} ${sizes[i]}`;
 }
 
 export default function Analytics() {
@@ -43,78 +31,89 @@ export default function Analytics() {
 
   if (error) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <Card className="w-full max-w-2xl glass-strong border-2 border-destructive/50">
-          <CardHeader>
-            <div className="flex items-center gap-3">
-              <AlertCircle className="h-8 w-8 text-destructive" />
-              <div>
-                <CardTitle className="text-destructive text-xl font-display font-bold">
-                  Error Loading Analytics
-                </CardTitle>
-                <CardDescription className="text-base font-medium mt-1">
-                  Unable to fetch analytics data from the backend
-                </CardDescription>
-              </div>
+      <Card
+        className="card-elevated border-destructive/40 max-w-xl mx-auto"
+        data-ocid="analytics-error"
+      >
+        <CardHeader>
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-destructive/10 border border-destructive/25">
+              <AlertCircle className="h-5 w-5 text-destructive" />
             </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <Alert variant="destructive" className="glass-strong">
-              <AlertCircle className="h-4 w-4" />
-              <AlertTitle className="font-bold">Connection Error</AlertTitle>
-              <AlertDescription className="text-sm font-medium">
-                {error instanceof Error
-                  ? error.message
-                  : "Failed to connect to the backend canister. Please check your connection and try again."}
-              </AlertDescription>
-            </Alert>
-            <Button
-              onClick={() => refetch()}
-              disabled={isRefetching}
-              className="w-full gap-2 neon-glow-primary font-bold"
-            >
-              <RefreshCw
-                className={`h-4 w-4 ${isRefetching ? "animate-spin" : ""}`}
-              />
-              {isRefetching ? "Retrying..." : "Retry"}
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
+            <div>
+              <CardTitle className="text-destructive text-base font-display font-semibold">
+                Error Loading Analytics
+              </CardTitle>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Unable to fetch analytics from the backend
+              </p>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <Alert variant="destructive" className="border-destructive/40">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle className="font-semibold text-sm">
+              Connection Error
+            </AlertTitle>
+            <AlertDescription className="text-xs">
+              {error instanceof Error
+                ? error.message
+                : "Failed to connect to the backend canister. Please try again."}
+            </AlertDescription>
+          </Alert>
+          <Button
+            onClick={() => refetch()}
+            disabled={isRefetching}
+            size="sm"
+            className="w-full gap-2 bg-accent text-accent-foreground hover:bg-accent/90 font-medium"
+          >
+            <RefreshCw
+              className={`h-4 w-4 ${isRefetching ? "animate-spin" : ""}`}
+            />
+            {isRefetching ? "Retrying…" : "Retry"}
+          </Button>
+        </CardContent>
+      </Card>
     );
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 animate-fade-in" data-ocid="analytics-section">
       <div className="text-center">
-        <h2 className="text-3xl font-display font-black tracking-tight gradient-text-primary flex items-center justify-center gap-3">
-          Storage Analytics
-          <TrendingUp className="h-8 w-8 text-accent" />
-        </h2>
-        <p className="text-lg font-medium text-muted-foreground mt-2">
+        <div className="inline-flex items-center gap-2 mb-3">
+          <TrendingUp className="h-5 w-5 text-accent" />
+          <h2 className="text-xl font-display font-bold text-foreground">
+            Platform Analytics
+          </h2>
+        </div>
+        <p className="text-sm text-muted-foreground">
           Real-time metrics for all documents stored on Chain File
         </p>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
-        <Card className="glass-strong border-2 border-primary/20 hover-lift neon-glow-primary">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-            <CardTitle className="text-base font-bold uppercase tracking-wide">
+      <div className="grid gap-4 md:grid-cols-2">
+        <Card
+          className="card-elevated border-border"
+          data-ocid="total-files-card"
+        >
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 pt-4 px-5">
+            <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
               Total Files
             </CardTitle>
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl glass border-2 border-primary/30 neon-glow-primary">
-              <Files className="h-6 w-6 text-primary" />
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent/10 border border-accent/20">
+              <Files className="h-4 w-4 text-accent" />
             </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="px-5 pb-5">
             {isLoading ? (
-              <Skeleton className="h-12 w-40 glass" />
+              <Skeleton className="h-9 w-28 bg-muted" />
             ) : (
               <>
-                <div className="text-4xl font-display font-black tracking-tight gradient-text-primary">
-                  {formatNumber(analytics?.totalFiles || 0n)}
-                </div>
-                <p className="text-sm font-medium text-muted-foreground mt-2">
+                <p className="text-3xl font-display font-bold text-foreground tracking-tight">
+                  {Number(analytics?.totalFiles || 0n).toLocaleString()}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
                   Documents uploaded to the system
                 </p>
               </>
@@ -122,24 +121,27 @@ export default function Analytics() {
           </CardContent>
         </Card>
 
-        <Card className="glass-strong border-2 border-accent/20 hover-lift neon-glow-accent">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-            <CardTitle className="text-base font-bold uppercase tracking-wide">
-              Total Storage Used
+        <Card
+          className="card-elevated border-border"
+          data-ocid="total-storage-card"
+        >
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 pt-4 px-5">
+            <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              Total Storage
             </CardTitle>
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl glass border-2 border-accent/30 neon-glow-accent">
-              <HardDrive className="h-6 w-6 text-accent" />
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent/10 border border-accent/20">
+              <HardDrive className="h-4 w-4 text-accent" />
             </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="px-5 pb-5">
             {isLoading ? (
-              <Skeleton className="h-12 w-40 glass" />
+              <Skeleton className="h-9 w-28 bg-muted" />
             ) : (
               <>
-                <div className="text-4xl font-display font-black tracking-tight gradient-text-accent">
+                <p className="text-3xl font-display font-bold text-accent tracking-tight">
                   {formatBytes(analytics?.totalStorage || 0n)}
-                </div>
-                <p className="text-sm font-medium text-muted-foreground mt-2">
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
                   Cumulative size of all documents
                 </p>
               </>
@@ -147,25 +149,6 @@ export default function Analytics() {
           </CardContent>
         </Card>
       </div>
-
-      <Card className="glass-strong border-2 border-muted/20">
-        <CardHeader>
-          <CardTitle className="text-xl font-display font-bold">
-            About Analytics
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="text-base font-medium text-muted-foreground space-y-3">
-          <p>
-            These metrics represent the total storage usage across all users on
-            Chain File. The data is updated in real-time and reflects the
-            current state of the system.
-          </p>
-          <p>
-            All documents are securely encrypted and stored on the Internet
-            Computer blockchain, ensuring data integrity and availability.
-          </p>
-        </CardContent>
-      </Card>
     </div>
   );
 }

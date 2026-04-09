@@ -74,11 +74,10 @@ export default {
             },
             boxShadow: {
                 xs: '0 1px 2px 0 rgba(0,0,0,0.05)',
-                glass: 'var(--glass-shadow)',
-                'glass-lg': 'var(--glass-shadow-lg)',
-                'glow-primary': '0 0 16px oklch(var(--glow-primary) / 0.15)',
-                'glow-secondary': '0 0 16px oklch(var(--glow-secondary) / 0.15)',
-                'glow-accent': '0 0 16px oklch(var(--glow-accent) / 0.15)',
+                'sm': '0 1px 2px rgba(0, 0, 0, 0.16)',
+                'elevated': '0 4px 8px rgba(0, 0, 0, 0.2)',
+                'prominent': '0 12px 24px rgba(0, 0, 0, 0.25)',
+                'deep': '0 20px 40px rgba(0, 0, 0, 0.3)',
             },
             keyframes: {
                 'accordion-down': {
@@ -89,29 +88,25 @@ export default {
                     from: { height: 'var(--radix-accordion-content-height)' },
                     to: { height: '0' }
                 },
-                'shimmer': {
-                    '0%': { backgroundPosition: '-1000px 0' },
-                    '100%': { backgroundPosition: '1000px 0' }
+                'fade-in': {
+                    '0%': { opacity: '0' },
+                    '100%': { opacity: '1' }
                 },
-                'pulse-glow': {
-                    '0%, 100%': { boxShadow: '0 0 8px oklch(var(--primary) / 0.15)' },
-                    '50%': { boxShadow: '0 0 16px oklch(var(--primary) / 0.25)' }
-                },
-                'float': {
-                    '0%, 100%': { transform: 'translateY(0px)' },
-                    '50%': { transform: 'translateY(-10px)' }
+                'slide-up': {
+                    '0%': { transform: 'translateY(10px)', opacity: '0' },
+                    '100%': { transform: 'translateY(0)', opacity: '1' }
                 }
             },
             animation: {
                 'accordion-down': 'accordion-down 0.2s ease-out',
                 'accordion-up': 'accordion-up 0.2s ease-out',
-                'shimmer': 'shimmer 3s linear infinite',
-                'pulse-glow': 'pulse-glow 2s ease-in-out infinite',
-                'float': 'float 3s ease-in-out infinite'
+                'fade-in': 'fade-in 0.3s ease-out',
+                'slide-up': 'slide-up 0.3s ease-out'
             },
             fontFamily: {
-                sans: ['Inter', 'system-ui', 'sans-serif'],
-                display: ['Outfit', 'Inter', 'system-ui', 'sans-serif'],
+                display: ['var(--font-display)', 'system-ui', 'sans-serif'],
+                body: ['var(--font-body)', 'system-ui', 'sans-serif'],
+                mono: ['var(--font-mono)', 'monospace'],
             },
             backdropBlur: {
                 xs: '2px',

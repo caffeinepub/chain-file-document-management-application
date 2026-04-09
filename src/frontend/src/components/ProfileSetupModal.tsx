@@ -16,7 +16,6 @@ export default function ProfileSetupModal() {
   const [name, setName] = useState("");
   const saveProfile = useSaveCallerUserProfile();
 
-  // Show success message when profile is saved
   useEffect(() => {
     if (saveProfile.isSuccess) {
       toast.success("Welcome to Chain File! Your profile has been created.");
@@ -29,7 +28,6 @@ export default function ProfileSetupModal() {
       toast.error("Please enter your name");
       return;
     }
-
     try {
       await saveProfile.mutateAsync({ name: name.trim() });
     } catch (error) {
@@ -41,21 +39,25 @@ export default function ProfileSetupModal() {
   return (
     <Dialog open={true}>
       <DialogContent
-        className="sm:max-w-md glass-strong"
+        className="sm:max-w-md bg-card border-border shadow-deep"
         onInteractOutside={(e) => e.preventDefault()}
+        data-ocid="profile-setup-modal"
       >
         <DialogHeader>
-          <DialogTitle className="text-2xl font-display gradient-text-primary">
+          <DialogTitle className="text-xl font-display font-semibold text-foreground">
             Welcome to Chain File
           </DialogTitle>
-          <DialogDescription className="text-base">
+          <DialogDescription className="text-sm text-muted-foreground">
             Please enter your name to complete your profile setup and start
-            managing your documents securely.
+            managing your documents.
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4 mt-2">
           <div className="space-y-2">
-            <Label htmlFor="name" className="font-semibold">
+            <Label
+              htmlFor="name"
+              className="text-sm font-medium text-foreground"
+            >
               Your Name
             </Label>
             <Input
@@ -64,18 +66,20 @@ export default function ProfileSetupModal() {
               value={name}
               onChange={(e) => setName(e.target.value)}
               autoFocus
-              className="glass"
+              className="border-border bg-input text-foreground placeholder:text-muted-foreground focus-visible:ring-accent/30 focus-visible:border-accent"
+              data-ocid="profile-name-input"
             />
           </div>
           <Button
             type="submit"
-            className="w-full neon-glow-primary font-bold"
+            className="w-full bg-accent text-accent-foreground hover:bg-accent/90 font-semibold shadow-elevated"
             disabled={saveProfile.isPending}
+            data-ocid="profile-submit-btn"
           >
             {saveProfile.isPending ? (
               <>
-                <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent mr-2" />
-                Creating Profile...
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-accent-foreground border-t-transparent mr-2" />
+                Creating Profile…
               </>
             ) : (
               "Continue"

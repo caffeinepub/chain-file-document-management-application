@@ -1,0 +1,121 @@
+// Version: 3.0.0
+type Data__791452850<K, V> =
+  {var count : Nat__490723111; kvs : [var ?(K, V)]};
+type DocumentMetadata__268023399 =
+  {
+    accessCode : Text;
+    blob : ExternalBlob__246066408;
+    encryptionKey : Text;
+    fileSize : Nat;
+    filename : Text;
+    id : Text;
+    mimeType : Text;
+    owner : Principal;
+    uploadTimestamp : Time__900049286
+  };
+type ExternalBlob__246066408 = Blob;
+type FileEventType__386462232 =
+  {#delete; #download; #preview; #publicAccess; #upload};
+type FileEvent__667474301 =
+  {
+    eventType : FileEventType__386462232;
+    fileId : Text;
+    fileName : Text;
+    hash : Text;
+    timestamp : Time__900049286;
+    user : Principal
+  };
+type Int__270357528 = Int__616954475;
+type Int__616954475 = Int;
+type Internal__8484328<K, V> =
+  {children : [var ?Node__46230540<K, V>]; data : Data__791452850<K, V>};
+type Leaf__809889148<K, V> = {data : Data__791452850<K, V>};
+type Map__158565046<K, V> = Map__297112838<K, V>;
+type Map__297112838<K, V> =
+  {var root : Node__46230540<K, V>; var size : Nat__490723111};
+type Map__605269027<K, V> = Map__158565046<K, V>;
+type Nat__490723111 = Nat__920180692;
+type Nat__920180692 = Nat;
+type Node__46230540<K, V> =
+  {#internal : Internal__8484328<K, V>; #leaf : Leaf__809889148<K, V>};
+type OldStorageState__667501572 =
+  {var authorizedPrincipals : [Principal]; var blobTodeletete : [Blob]};
+type PaymentTransaction__389674112 =
+  {
+    amount : Nat;
+    timestamp : Time__900049286;
+    transactionId : Text;
+    verified : Bool
+  };
+type Time__796480547 = Int__270357528;
+type Time__900049286 = Time__796480547;
+type UserProfile__491224006 = {name : Text};
+type UserRole__1054455867 = {#admin; #guest; #user};
+actor ({
+  stable STORAGE_LIMIT : Nat;
+  stable var accessCodeMap :
+    {var root : Node__46230540<Text, Text>; var size : Nat__490723111};
+  stable accessControlState :
+    {
+      var adminAssigned : Bool;
+      userRoles : Map__605269027<Principal, UserRole__1054455867>
+    };
+  stable var documents :
+    {
+      var root : Node__46230540<Text, DocumentMetadata__268023399>;
+      var size : Nat__490723111
+    };
+  stable var fileHistory :
+    {
+      var root : Node__46230540<Text, [FileEvent__667474301]>;
+      var size : Nat__490723111
+    };
+  in storage : OldStorageState__667501572;
+  stable var userPaymentStatus :
+    {var root : Node__46230540<Principal, Bool>; var size : Nat__490723111};
+  stable var userPaymentTransactions :
+    {
+      var root : Node__46230540<Principal, [PaymentTransaction__389674112]>;
+      var size : Nat__490723111
+    };
+  stable var userProfiles :
+    {
+      var root : Node__46230540<Principal, UserProfile__491224006>;
+      var size : Nat__490723111
+    };
+  stable var userStorageUsage :
+    {var root : Node__46230540<Principal, Nat>; var size : Nat__490723111}
+}, {
+  stable STORAGE_LIMIT : Nat;
+  stable var accessCodeMap :
+    {var root : Node__46230540<Text, Text>; var size : Nat__490723111};
+  stable accessControlState :
+    {
+      var adminAssigned : Bool;
+      userRoles : Map__605269027<Principal, UserRole__1054455867>
+    };
+  stable var documents :
+    {
+      var root : Node__46230540<Text, DocumentMetadata__268023399>;
+      var size : Nat__490723111
+    };
+  stable var fileHistory :
+    {
+      var root : Node__46230540<Text, [FileEvent__667474301]>;
+      var size : Nat__490723111
+    };
+  stable var userPaymentStatus :
+    {var root : Node__46230540<Principal, Bool>; var size : Nat__490723111};
+  stable var userPaymentTransactions :
+    {
+      var root : Node__46230540<Principal, [PaymentTransaction__389674112]>;
+      var size : Nat__490723111
+    };
+  stable var userProfiles :
+    {
+      var root : Node__46230540<Principal, UserProfile__491224006>;
+      var size : Nat__490723111
+    };
+  stable var userStorageUsage :
+    {var root : Node__46230540<Principal, Nat>; var size : Nat__490723111}
+}) ;

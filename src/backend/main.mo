@@ -1,6 +1,7 @@
-import AccessControl "authorization/access-control";
-import Storage "blob-storage/Storage";
-import MixinStorage "blob-storage/Mixin";
+import AccessControl "mo:caffeineai-authorization/access-control";
+import MixinAuthorization "mo:caffeineai-authorization/MixinAuthorization";
+import Storage "mo:caffeineai-object-storage/Storage";
+import MixinObjectStorage "mo:caffeineai-object-storage/Mixin";
 import Map "mo:core/Map";
 import Principal "mo:core/Principal";
 import Runtime "mo:core/Runtime";
@@ -10,30 +11,14 @@ import Int "mo:core/Int";
 import Array "mo:core/Array";
 import Nat "mo:core/Nat";
 import Char "mo:core/Char";
+import Migration "migration";
 
-
-
+(with migration = Migration.run)
 actor {
   // Initialize the user system state
   let accessControlState = AccessControl.initState();
 
-  // Initialize authentication system (first caller becomes admin, others become users)
-  public shared ({ caller }) func initializeAccessControl() : async () {
-    AccessControl.initialize(accessControlState, caller);
-  };
-
-  public query ({ caller }) func getCallerUserRole() : async AccessControl.UserRole {
-    AccessControl.getUserRole(accessControlState, caller);
-  };
-
-  public shared ({ caller }) func assignCallerUserRole(user : Principal, role : AccessControl.UserRole) : async () {
-    // Admin-only check happens inside
-    AccessControl.assignRole(accessControlState, caller, user, role);
-  };
-
-  public query ({ caller }) func isCallerAdmin() : async Bool {
-    AccessControl.isAdmin(accessControlState, caller);
-  };
+  include MixinAuthorization(accessControlState);
 
   public type UserProfile = {
     name : Text;
@@ -64,8 +49,7 @@ actor {
   };
 
   // Storage
-  let storage = Storage.new();
-  include MixinStorage(storage);
+  include MixinObjectStorage();
 
   // Document types
   type DocumentMetadata = {

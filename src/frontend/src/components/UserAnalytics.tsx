@@ -1,36 +1,25 @@
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   AlertCircle,
   Files,
   HardDrive,
+  Info,
   RefreshCw,
   TrendingUp,
 } from "lucide-react";
 import { useGetUserAnalytics } from "../hooks/useQueries";
 
 function formatBytes(bytes: bigint): string {
-  const numBytes = Number(bytes);
-  if (numBytes === 0) return "0 Bytes";
-
+  const n = Number(bytes);
+  if (n === 0) return "0 B";
   const k = 1024;
-  const sizes = ["Bytes", "KB", "MB", "GB", "TB"];
-  const i = Math.floor(Math.log(numBytes) / Math.log(k));
-
-  return `${(numBytes / k ** i).toFixed(2)} ${sizes[i]}`;
-}
-
-function formatNumber(num: bigint): string {
-  return Number(num).toLocaleString();
+  const sizes = ["B", "KB", "MB", "GB", "TB"];
+  const i = Math.floor(Math.log(n) / Math.log(k));
+  return `${(n / k ** i).toFixed(2)} ${sizes[i]}`;
 }
 
 export default function UserAnalytics() {
@@ -42,48 +31,56 @@ export default function UserAnalytics() {
     isRefetching,
   } = useGetUserAnalytics();
 
-  const FREE_LIMIT_BYTES = 1073741824;
+  const FREE_LIMIT = 1_073_741_824;
   const usedBytes = Number(analytics?.userStorage || 0n);
-  const usagePercentage = Math.min((usedBytes / FREE_LIMIT_BYTES) * 100, 100);
-  const isNearLimit = usagePercentage >= 80;
-  const isOverLimit = usagePercentage >= 100;
+  const pct = Math.min((usedBytes / FREE_LIMIT) * 100, 100);
+  const isNear = pct >= 80;
+  const isOver = pct >= 100;
 
   if (error) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <Card className="w-full max-w-2xl glass-strong border-2 border-destructive/50">
+      <div className="max-w-xl mx-auto">
+        <Card
+          className="card-elevated border-destructive/40"
+          data-ocid="user-analytics-error"
+        >
           <CardHeader>
             <div className="flex items-center gap-3">
-              <AlertCircle className="h-8 w-8 text-destructive" />
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-destructive/10 border border-destructive/25">
+                <AlertCircle className="h-5 w-5 text-destructive" />
+              </div>
               <div>
-                <CardTitle className="text-destructive text-xl font-display font-bold">
+                <CardTitle className="text-destructive text-base font-display font-semibold">
                   Error Loading Analytics
                 </CardTitle>
-                <CardDescription className="text-base font-medium mt-1">
-                  Unable to fetch your analytics data from the backend
-                </CardDescription>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Unable to fetch your analytics data
+                </p>
               </div>
             </div>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <Alert variant="destructive" className="glass-strong">
+          <CardContent className="space-y-3">
+            <Alert variant="destructive" className="border-destructive/40">
               <AlertCircle className="h-4 w-4" />
-              <AlertTitle className="font-bold">Connection Error</AlertTitle>
-              <AlertDescription className="text-sm font-medium">
+              <AlertTitle className="font-semibold text-sm">
+                Connection Error
+              </AlertTitle>
+              <AlertDescription className="text-xs">
                 {error instanceof Error
                   ? error.message
-                  : "Failed to connect to the backend canister. Please check your connection and try again."}
+                  : "Failed to connect. Please check your connection."}
               </AlertDescription>
             </Alert>
             <Button
               onClick={() => refetch()}
               disabled={isRefetching}
-              className="w-full gap-2 neon-glow-primary font-bold"
+              size="sm"
+              className="w-full gap-2 bg-accent text-accent-foreground hover:bg-accent/90 font-medium"
             >
               <RefreshCw
                 className={`h-4 w-4 ${isRefetching ? "animate-spin" : ""}`}
               />
-              {isRefetching ? "Retrying..." : "Retry"}
+              {isRefetching ? "Retrying…" : "Retry"}
             </Button>
           </CardContent>
         </Card>
@@ -92,36 +89,45 @@ export default function UserAnalytics() {
   }
 
   return (
-    <div className="space-y-8">
-      <div className="text-center">
-        <h2 className="text-3xl font-display font-black tracking-tight gradient-text-primary flex items-center justify-center gap-3">
-          Your Storage Analytics
-          <TrendingUp className="h-8 w-8 text-accent" />
-        </h2>
-        <p className="text-lg font-medium text-muted-foreground mt-2">
+    <div
+      className="space-y-6 animate-fade-in"
+      data-ocid="user-analytics-section"
+    >
+      <div>
+        <div className="flex items-center gap-2 mb-1">
+          <TrendingUp className="h-5 w-5 text-accent" />
+          <h2 className="text-xl font-display font-bold text-foreground">
+            Your Storage Analytics
+          </h2>
+        </div>
+        <p className="text-sm text-muted-foreground">
           Real-time metrics for your uploaded documents
         </p>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
-        <Card className="glass-strong border-2 border-primary/20 hover-lift neon-glow-primary">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-            <CardTitle className="text-base font-bold uppercase tracking-wide">
-              Your Uploaded Files
+      {/* Metric cards */}
+      <div className="grid gap-4 md:grid-cols-2">
+        <Card
+          className="card-elevated border-border"
+          data-ocid="user-files-card"
+        >
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 pt-4 px-5">
+            <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              Your Files
             </CardTitle>
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl glass border-2 border-primary/30 neon-glow-primary">
-              <Files className="h-6 w-6 text-primary" />
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent/10 border border-accent/20">
+              <Files className="h-4 w-4 text-accent" />
             </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="px-5 pb-5">
             {isLoading ? (
-              <Skeleton className="h-12 w-40 glass" />
+              <Skeleton className="h-9 w-28 bg-muted" />
             ) : (
               <>
-                <div className="text-4xl font-display font-black tracking-tight gradient-text-primary">
-                  {formatNumber(analytics?.userFiles || 0n)}
-                </div>
-                <p className="text-sm font-medium text-muted-foreground mt-2">
+                <p className="text-3xl font-display font-bold text-foreground tracking-tight">
+                  {Number(analytics?.userFiles || 0n).toLocaleString()}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
                   Documents you have uploaded
                 </p>
               </>
@@ -129,24 +135,29 @@ export default function UserAnalytics() {
           </CardContent>
         </Card>
 
-        <Card className="glass-strong border-2 border-accent/20 hover-lift neon-glow-accent">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-            <CardTitle className="text-base font-bold uppercase tracking-wide">
-              Your Total Storage Usage
+        <Card
+          className="card-elevated border-border"
+          data-ocid="user-storage-card"
+        >
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 pt-4 px-5">
+            <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              Storage Used
             </CardTitle>
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl glass border-2 border-accent/30 neon-glow-accent">
-              <HardDrive className="h-6 w-6 text-accent" />
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent/10 border border-accent/20">
+              <HardDrive className="h-4 w-4 text-accent" />
             </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="px-5 pb-5">
             {isLoading ? (
-              <Skeleton className="h-12 w-40 glass" />
+              <Skeleton className="h-9 w-28 bg-muted" />
             ) : (
               <>
-                <div className="text-4xl font-display font-black tracking-tight gradient-text-accent">
+                <p
+                  className={`text-3xl font-display font-bold tracking-tight ${isOver ? "text-destructive" : isNear ? "text-yellow-500" : "text-accent"}`}
+                >
                   {formatBytes(analytics?.userStorage || 0n)}
-                </div>
-                <p className="text-sm font-medium text-muted-foreground mt-2">
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
                   Total size of your documents
                 </p>
               </>
@@ -155,98 +166,96 @@ export default function UserAnalytics() {
         </Card>
       </div>
 
+      {/* Storage limit tracker */}
       <Card
-        className={`glass-strong border-3 ${isOverLimit ? "border-destructive/50 neon-glow-primary" : isNearLimit ? "border-warning/50" : "border-primary/20 neon-glow-primary"}`}
+        className={`card-elevated ${isOver ? "border-destructive/40" : isNear ? "border-yellow-500/40" : "border-border"}`}
+        data-ocid="storage-limit-card"
       >
-        <CardHeader>
-          <CardTitle className="text-xl font-display font-bold flex items-center gap-3">
-            Storage Limit Tracker
-            {isNearLimit && <AlertCircle className="h-6 w-6 text-warning" />}
-            {isOverLimit && (
-              <AlertCircle className="h-6 w-6 text-destructive" />
+        <CardHeader className="pb-3 pt-5 px-5">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-sm font-semibold text-foreground font-display">
+              Storage Limit
+            </CardTitle>
+            {(isNear || isOver) && (
+              <AlertCircle
+                className={`h-4 w-4 ${isOver ? "text-destructive" : "text-yellow-500"}`}
+              />
             )}
-          </CardTitle>
-          <CardDescription className="text-base font-medium">
-            Your usage against the 1 GB free storage limit
-          </CardDescription>
+          </div>
+          <p className="text-xs text-muted-foreground">Free tier: 1 GB</p>
         </CardHeader>
-        <CardContent className="space-y-5">
+        <CardContent className="px-5 pb-5 space-y-4">
           {isLoading ? (
-            <Skeleton className="h-4 w-full glass" />
+            <Skeleton className="h-3 w-full bg-muted" />
           ) : (
             <>
-              <div className="space-y-3">
-                <div className="flex items-center justify-between text-base">
-                  <span className="font-bold">
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-medium text-foreground">
                     {formatBytes(analytics?.userStorage || 0n)} / 1.00 GB
                   </span>
                   <span
-                    className={`font-black text-lg ${isOverLimit ? "text-destructive" : isNearLimit ? "text-warning" : "gradient-text-primary"}`}
+                    className={`font-bold ${isOver ? "text-destructive" : isNear ? "text-yellow-500" : "text-accent"}`}
                   >
-                    {usagePercentage.toFixed(1)}%
+                    {pct.toFixed(1)}%
                   </span>
                 </div>
                 <Progress
-                  value={usagePercentage}
-                  className={`h-4 glass border border-primary/20 ${isOverLimit ? "[&>div]:bg-gradient-to-r [&>div]:from-destructive [&>div]:to-destructive/70" : isNearLimit ? "[&>div]:bg-gradient-to-r [&>div]:from-warning [&>div]:to-warning/70" : "[&>div]:bg-gradient-to-r [&>div]:from-primary [&>div]:via-accent [&>div]:to-secondary"}`}
+                  value={pct}
+                  className={`h-2 bg-muted ${isOver ? "[&>div]:bg-destructive" : isNear ? "[&>div]:bg-yellow-500" : "[&>div]:bg-accent"}`}
                 />
               </div>
 
-              {isOverLimit && (
+              {isOver && (
                 <Alert
                   variant="destructive"
-                  className="glass-strong border-2 border-destructive/50"
+                  className="border-destructive/40 py-3"
                 >
-                  <AlertCircle className="h-5 w-5" />
-                  <AlertDescription className="text-base font-bold">
-                    You have exceeded your free storage limit. Additional
-                    uploads will require payment.
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription className="text-xs font-medium">
+                    Storage limit exceeded. Additional uploads require payment.
+                  </AlertDescription>
+                </Alert>
+              )}
+              {isNear && !isOver && (
+                <Alert className="border-yellow-500/40 bg-yellow-500/5 py-3">
+                  <AlertCircle className="h-4 w-4 text-yellow-500" />
+                  <AlertDescription className="text-xs font-medium text-yellow-500">
+                    Approaching your free storage limit.
                   </AlertDescription>
                 </Alert>
               )}
 
-              {isNearLimit && !isOverLimit && (
-                <Alert className="glass-strong border-2 border-warning/50">
-                  <AlertCircle className="h-5 w-5 text-warning" />
-                  <AlertDescription className="text-base font-bold text-warning-foreground">
-                    You are approaching your free storage limit.
-                  </AlertDescription>
-                </Alert>
-              )}
-
-              <div className="pt-3 border-t border-border/50">
-                <div className="flex items-start gap-3 glass rounded-xl p-4 border border-primary/20">
-                  <TrendingUp className="h-6 w-6 text-primary mt-0.5 flex-shrink-0" />
-                  <p className="text-base font-medium text-muted-foreground">
-                    <strong className="gradient-text-accent">
-                      Additional Storage:
-                    </strong>{" "}
-                    Available through ICP payments at $2 per GB. Secure
-                    blockchain transactions ensure your data remains accessible.
-                  </p>
-                </div>
+              <div className="flex items-start gap-3 rounded-lg border border-border bg-muted/30 p-3">
+                <Info className="h-4 w-4 text-accent mt-0.5 flex-shrink-0" />
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  <span className="font-semibold text-foreground">
+                    Additional Storage:
+                  </span>{" "}
+                  Available via ICP payments at $2 per GB. Secure blockchain
+                  transactions ensure your data remains accessible.
+                </p>
               </div>
             </>
           )}
         </CardContent>
       </Card>
 
-      <Card className="glass-strong border-2 border-muted/20">
-        <CardHeader>
-          <CardTitle className="text-xl font-display font-bold">
+      {/* About */}
+      <Card className="card-elevated border-border">
+        <CardHeader className="pb-2 pt-4 px-5">
+          <CardTitle className="text-sm font-semibold text-foreground font-display">
             About Your Analytics
           </CardTitle>
         </CardHeader>
-        <CardContent className="text-base font-medium text-muted-foreground space-y-3">
+        <CardContent className="px-5 pb-5 text-xs text-muted-foreground space-y-2 leading-relaxed">
           <p>
-            These metrics show your personal storage usage on Chain File. The
-            data is updated in real-time and reflects only the documents you
-            have uploaded.
+            These metrics show your personal storage usage on Chain File. Data
+            updates in real-time and reflects only your uploaded documents.
           </p>
           <p>
-            All your documents are securely encrypted and stored on the Internet
-            Computer blockchain, ensuring data integrity and availability across
-            all your devices.
+            All documents are securely encrypted and stored on the Internet
+            Computer blockchain, ensuring data integrity across all devices.
           </p>
         </CardContent>
       </Card>

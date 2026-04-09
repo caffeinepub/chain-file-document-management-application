@@ -1,0 +1,130 @@
+type _ImmutableObjectStorageRefillResult = 
+ record {
+   success: opt bool;
+   topped_up_amount: opt nat;
+ };
+type _ImmutableObjectStorageRefillInformation = record {
+                                                  proposed_top_up_amount:
+                                                   opt nat;};
+type _ImmutableObjectStorageCreateCertificateResult = 
+ record {
+   blob_hash: text;
+   method: text;
+ };
+type UserRole = 
+ variant {
+   admin;
+   guest;
+   user;
+ };
+type UserProfile = record {name: text;};
+type Time = int;
+type PaymentTransaction = 
+ record {
+   amount: nat;
+   timestamp: Time;
+   transactionId: text;
+   verified: bool;
+ };
+type FileEventType = 
+ variant {
+   delete;
+   download;
+   preview;
+   publicAccess;
+   upload;
+ };
+type FileEvent = 
+ record {
+   eventType: FileEventType;
+   fileId: text;
+   fileName: text;
+   hash: text;
+   timestamp: Time;
+   user: principal;
+ };
+type ExternalBlob = blob;
+type DocumentMetadata = 
+ record {
+   accessCode: text;
+   "blob": ExternalBlob;
+   encryptionKey: text;
+   fileSize: nat;
+   filename: text;
+   id: text;
+   mimeType: text;
+   owner: principal;
+   uploadTimestamp: Time;
+ };
+service : {
+  _immutableObjectStorageBlobsAreLive: (hashes: vec blob) -> (vec bool) query;
+  _immutableObjectStorageBlobsToDelete: () -> (vec blob) query;
+  _immutableObjectStorageConfirmBlobDeletion: (blobs: vec blob) -> ();
+  _immutableObjectStorageCreateCertificate: (blobHash: text) ->
+   (_ImmutableObjectStorageCreateCertificateResult);
+  _immutableObjectStorageRefillCashier: (refillInformation:
+   opt _ImmutableObjectStorageRefillInformation) ->
+   (_ImmutableObjectStorageRefillResult);
+  _immutableObjectStorageUpdateGatewayPrincipals: () -> ();
+  _initializeAccessControl: () -> ();
+  assignCallerUserRole: (user: principal, role: UserRole) -> ();
+  checkStorageLimit: (fileSize: nat) ->
+   (record {
+      canUpload: bool;
+      paymentRequired: bool;
+      remainingStorage: nat;
+    }) query;
+  confirmPayment: (transactionId: text, amount: nat) -> ();
+  deleteDocument: (id: text) -> ();
+  downloadDocument: (id: text) ->
+   (opt record {
+          "blob": ExternalBlob;
+          filename: text;
+          mimeType: text;
+        }) query;
+  downloadDocumentWithCode: (code: text) ->
+   (opt record {
+          "blob": ExternalBlob;
+          filename: text;
+          mimeType: text;
+        }) query;
+  getCallerUserProfile: () -> (opt UserProfile) query;
+  getCallerUserRole: () -> (UserRole) query;
+  getDocumentEncryptionKeyWithCode: (code: text) -> (opt text) query;
+  getDocumentMetadata: (id: text) -> (opt DocumentMetadata) query;
+  getDocumentMetadataWithCode: (code: text) -> (opt DocumentMetadata) query;
+  getDocumentPreview: (id: text) ->
+   (opt record {
+          "blob": ExternalBlob;
+          mimeType: text;
+        }) query;
+  getDocumentPreviewWithCode: (code: text) ->
+   (opt record {
+          "blob": ExternalBlob;
+          mimeType: text;
+        }) query;
+  getFileHistory: () -> (vec FileEvent) query;
+  getFileHistoryByFileId: (fileId: text) -> (vec FileEvent) query;
+  getFileHistoryByType: (eventType: FileEventType) -> (vec FileEvent) query;
+  getGlobalAnalytics: () ->
+   (record {
+      totalFiles: nat;
+      totalStorage: nat;
+    }) query;
+  getPaymentHistory: () -> (vec PaymentTransaction) query;
+  getUserAnalytics: () -> (record {
+                             userFiles: nat;
+                             userStorage: nat;
+                           }) query;
+  getUserProfile: (user: principal) -> (opt UserProfile) query;
+  isCallerAdmin: () -> (bool) query;
+  listUserDocuments: () -> (vec DocumentMetadata) query;
+  recordDocumentDownload: (id: text) -> ();
+  recordDocumentPreview: (id: text) -> ();
+  recordPublicDownload: (code: text) -> ();
+  recordPublicPreview: (code: text) -> ();
+  saveCallerUserProfile: (profile: UserProfile) -> ();
+  uploadDocument: (filename: text, fileSize: nat, accessCode: text,
+   encryptionKey: text, "blob": ExternalBlob, mimeType: text) -> (text);
+  validateAccessCode: (code: text) -> (bool) query;
+}
