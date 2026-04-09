@@ -30,6 +30,7 @@ type FileEventType =
  variant {
    delete;
    download;
+   folderTagUpdate;
    preview;
    publicAccess;
    upload;
@@ -51,9 +52,11 @@ type DocumentMetadata =
    encryptionKey: text;
    fileSize: nat;
    filename: text;
+   folders: vec text;
    id: text;
    mimeType: text;
    owner: principal;
+   tags: vec text;
    uploadTimestamp: Time;
  };
 service : {
@@ -119,12 +122,20 @@ service : {
   getUserProfile: (user: principal) -> (opt UserProfile) query;
   isCallerAdmin: () -> (bool) query;
   listUserDocuments: () -> (vec DocumentMetadata) query;
+  listUserFolders: () -> (vec text) query;
+  listUserTags: () -> (vec text) query;
   recordDocumentDownload: (id: text) -> ();
   recordDocumentPreview: (id: text) -> ();
   recordPublicDownload: (code: text) -> ();
   recordPublicPreview: (code: text) -> ();
   saveCallerUserProfile: (profile: UserProfile) -> ();
+  updateDocumentFoldersTags: (id: text, folders: vec text, tags: vec text) ->
+   (variant {
+      err: text;
+      ok: DocumentMetadata;
+    });
   uploadDocument: (filename: text, fileSize: nat, accessCode: text,
-   encryptionKey: text, "blob": ExternalBlob, mimeType: text) -> (text);
+   encryptionKey: text, "blob": ExternalBlob, mimeType: text, folders:
+   vec text, tags: vec text) -> (text);
   validateAccessCode: (code: text) -> (bool) query;
 }

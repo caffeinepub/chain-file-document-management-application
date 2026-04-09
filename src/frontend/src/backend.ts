@@ -102,8 +102,10 @@ export interface DocumentMetadata {
     id: string;
     owner: Principal;
     blob: ExternalBlob;
+    tags: Array<string>;
     accessCode: string;
     mimeType: string;
+    folders: Array<string>;
     fileSize: bigint;
     uploadTimestamp: Time;
     filename: string;
@@ -134,7 +136,8 @@ export enum FileEventType {
     preview = "preview",
     delete_ = "delete",
     upload = "upload",
-    download = "download"
+    download = "download",
+    folderTagUpdate = "folderTagUpdate"
 }
 export enum UserRole {
     admin = "admin",
@@ -195,12 +198,21 @@ export interface backendInterface {
     getUserProfile(user: Principal): Promise<UserProfile | null>;
     isCallerAdmin(): Promise<boolean>;
     listUserDocuments(): Promise<Array<DocumentMetadata>>;
+    listUserFolders(): Promise<Array<string>>;
+    listUserTags(): Promise<Array<string>>;
     recordDocumentDownload(id: string): Promise<void>;
     recordDocumentPreview(id: string): Promise<void>;
     recordPublicDownload(code: string): Promise<void>;
     recordPublicPreview(code: string): Promise<void>;
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
-    uploadDocument(filename: string, fileSize: bigint, accessCode: string, encryptionKey: string, blob: ExternalBlob, mimeType: string): Promise<string>;
+    updateDocumentFoldersTags(id: string, folders: Array<string>, tags: Array<string>): Promise<{
+        __kind__: "ok";
+        ok: DocumentMetadata;
+    } | {
+        __kind__: "err";
+        err: string;
+    }>;
+    uploadDocument(filename: string, fileSize: bigint, accessCode: string, encryptionKey: string, blob: ExternalBlob, mimeType: string, folders: Array<string>, tags: Array<string>): Promise<string>;
     validateAccessCode(code: string): Promise<boolean>;
 }
 import type { DocumentMetadata as _DocumentMetadata, ExternalBlob as _ExternalBlob, FileEvent as _FileEvent, FileEventType as _FileEventType, Time as _Time, UserProfile as _UserProfile, UserRole as _UserRole, _ImmutableObjectStorageRefillInformation as __ImmutableObjectStorageRefillInformation, _ImmutableObjectStorageRefillResult as __ImmutableObjectStorageRefillResult } from "./declarations/backend.did.d.ts";
@@ -636,6 +648,34 @@ export class Backend implements backendInterface {
             return from_candid_vec_n29(this._uploadFile, this._downloadFile, result);
         }
     }
+    async listUserFolders(): Promise<Array<string>> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.listUserFolders();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.listUserFolders();
+            return result;
+        }
+    }
+    async listUserTags(): Promise<Array<string>> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.listUserTags();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.listUserTags();
+            return result;
+        }
+    }
     async recordDocumentDownload(arg0: string): Promise<void> {
         if (this.processError) {
             try {
@@ -706,17 +746,37 @@ export class Backend implements backendInterface {
             return result;
         }
     }
-    async uploadDocument(arg0: string, arg1: bigint, arg2: string, arg3: string, arg4: ExternalBlob, arg5: string): Promise<string> {
+    async updateDocumentFoldersTags(arg0: string, arg1: Array<string>, arg2: Array<string>): Promise<{
+        __kind__: "ok";
+        ok: DocumentMetadata;
+    } | {
+        __kind__: "err";
+        err: string;
+    }> {
         if (this.processError) {
             try {
-                const result = await this.actor.uploadDocument(arg0, arg1, arg2, arg3, await to_candid_ExternalBlob_n30(this._uploadFile, this._downloadFile, arg4), arg5);
+                const result = await this.actor.updateDocumentFoldersTags(arg0, arg1, arg2);
+                return from_candid_variant_n30(this._uploadFile, this._downloadFile, result);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.updateDocumentFoldersTags(arg0, arg1, arg2);
+            return from_candid_variant_n30(this._uploadFile, this._downloadFile, result);
+        }
+    }
+    async uploadDocument(arg0: string, arg1: bigint, arg2: string, arg3: string, arg4: ExternalBlob, arg5: string, arg6: Array<string>, arg7: Array<string>): Promise<string> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.uploadDocument(arg0, arg1, arg2, arg3, await to_candid_ExternalBlob_n31(this._uploadFile, this._downloadFile, arg4), arg5, arg6, arg7);
                 return result;
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.uploadDocument(arg0, arg1, arg2, arg3, await to_candid_ExternalBlob_n30(this._uploadFile, this._downloadFile, arg4), arg5);
+            const result = await this.actor.uploadDocument(arg0, arg1, arg2, arg3, await to_candid_ExternalBlob_n31(this._uploadFile, this._downloadFile, arg4), arg5, arg6, arg7);
             return result;
         }
     }
@@ -807,8 +867,10 @@ async function from_candid_record_n19(_uploadFile: (file: ExternalBlob) => Promi
     id: string;
     owner: Principal;
     blob: _ExternalBlob;
+    tags: Array<string>;
     accessCode: string;
     mimeType: string;
+    folders: Array<string>;
     fileSize: bigint;
     uploadTimestamp: _Time;
     filename: string;
@@ -817,8 +879,10 @@ async function from_candid_record_n19(_uploadFile: (file: ExternalBlob) => Promi
     id: string;
     owner: Principal;
     blob: ExternalBlob;
+    tags: Array<string>;
     accessCode: string;
     mimeType: string;
+    folders: Array<string>;
     fileSize: bigint;
     uploadTimestamp: Time;
     filename: string;
@@ -828,8 +892,10 @@ async function from_candid_record_n19(_uploadFile: (file: ExternalBlob) => Promi
         id: value.id,
         owner: value.owner,
         blob: await from_candid_ExternalBlob_n12(_uploadFile, _downloadFile, value.blob),
+        tags: value.tags,
         accessCode: value.accessCode,
         mimeType: value.mimeType,
+        folders: value.folders,
         fileSize: value.fileSize,
         uploadTimestamp: value.uploadTimestamp,
         filename: value.filename,
@@ -903,8 +969,29 @@ function from_candid_variant_n26(_uploadFile: (file: ExternalBlob) => Promise<Ui
     upload: null;
 } | {
     download: null;
+} | {
+    folderTagUpdate: null;
 }): FileEventType {
-    return "publicAccess" in value ? FileEventType.publicAccess : "preview" in value ? FileEventType.preview : "delete" in value ? FileEventType.delete : "upload" in value ? FileEventType.upload : "download" in value ? FileEventType.download : value;
+    return "publicAccess" in value ? FileEventType.publicAccess : "preview" in value ? FileEventType.preview : "delete" in value ? FileEventType.delete : "upload" in value ? FileEventType.upload : "download" in value ? FileEventType.download : "folderTagUpdate" in value ? FileEventType.folderTagUpdate : value;
+}
+async function from_candid_variant_n30(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+    ok: _DocumentMetadata;
+} | {
+    err: string;
+}): Promise<{
+    __kind__: "ok";
+    ok: DocumentMetadata;
+} | {
+    __kind__: "err";
+    err: string;
+}> {
+    return "ok" in value ? {
+        __kind__: "ok",
+        ok: await from_candid_DocumentMetadata_n18(_uploadFile, _downloadFile, value.ok)
+    } : "err" in value ? {
+        __kind__: "err",
+        err: value.err
+    } : value;
 }
 function from_candid_vec_n22(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<_FileEvent>): Array<FileEvent> {
     return value.map((x)=>from_candid_FileEvent_n23(_uploadFile, _downloadFile, x));
@@ -912,7 +999,7 @@ function from_candid_vec_n22(_uploadFile: (file: ExternalBlob) => Promise<Uint8A
 async function from_candid_vec_n29(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<_DocumentMetadata>): Promise<Array<DocumentMetadata>> {
     return await Promise.all(value.map(async (x)=>await from_candid_DocumentMetadata_n18(_uploadFile, _downloadFile, x)));
 }
-async function to_candid_ExternalBlob_n30(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: ExternalBlob): Promise<_ExternalBlob> {
+async function to_candid_ExternalBlob_n31(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: ExternalBlob): Promise<_ExternalBlob> {
     return await _uploadFile(value);
 }
 function to_candid_FileEventType_n27(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: FileEventType): _FileEventType {
@@ -946,6 +1033,8 @@ function to_candid_variant_n28(_uploadFile: (file: ExternalBlob) => Promise<Uint
     upload: null;
 } | {
     download: null;
+} | {
+    folderTagUpdate: null;
 } {
     return value == FileEventType.publicAccess ? {
         publicAccess: null
@@ -957,6 +1046,8 @@ function to_candid_variant_n28(_uploadFile: (file: ExternalBlob) => Promise<Uint
         upload: null
     } : value == FileEventType.download ? {
         download: null
+    } : value == FileEventType.folderTagUpdate ? {
+        folderTagUpdate: null
     } : value;
 }
 function to_candid_variant_n9(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: UserRole): {

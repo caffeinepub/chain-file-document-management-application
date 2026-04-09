@@ -11,6 +11,7 @@ import Int "mo:core/Int";
 import Array "mo:core/Array";
 import Nat "mo:core/Nat";
 import Char "mo:core/Char";
+import Set "mo:core/Set";
 import Migration "migration";
 
 (with migration = Migration.run)
@@ -25,7 +26,7 @@ actor {
     // Other user metadata if needed
   };
 
-  var userProfiles = Map.empty<Principal, UserProfile>();
+  let userProfiles = Map.empty<Principal, UserProfile>();
 
   public query ({ caller }) func getCallerUserProfile() : async ?UserProfile {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
@@ -62,6 +63,8 @@ actor {
     encryptionKey : Text;
     blob : Storage.ExternalBlob;
     mimeType : Text;
+    folders : [Text]; // folders this document belongs to (multiple allowed)
+    tags : [Text];    // tags on this document (multiple allowed)
   };
 
   // Payment transaction record
@@ -79,6 +82,7 @@ actor {
     #preview;
     #publicAccess;
     #delete;
+    #folderTagUpdate; // fired when folders/tags change
   };
 
   // File event record
@@ -92,20 +96,20 @@ actor {
   };
 
   // Document storage
-  var documents = Map.empty<Text, DocumentMetadata>();
-  var accessCodeMap = Map.empty<Text, Text>();
+  let documents = Map.empty<Text, DocumentMetadata>();
+  let accessCodeMap = Map.empty<Text, Text>();
 
   // Storage limit tracking
   let STORAGE_LIMIT : Nat = 1_073_741_824; // 1 GB in bytes
 
-  var userStorageUsage = Map.empty<Principal, Nat>();
-  var userPaymentStatus = Map.empty<Principal, Bool>();
+  let userStorageUsage = Map.empty<Principal, Nat>();
+  let userPaymentStatus = Map.empty<Principal, Bool>();
 
   // Payment transaction tracking
-  var userPaymentTransactions = Map.empty<Principal, [PaymentTransaction]>();
+  let userPaymentTransactions = Map.empty<Principal, [PaymentTransaction]>();
 
   // File history tracking
-  var fileHistory = Map.empty<Text, [FileEvent]>();
+  let fileHistory = Map.empty<Text, [FileEvent]>();
 
   // Check storage limit before upload - USER ONLY
   public query ({ caller }) func checkStorageLimit(fileSize : Nat) : async {
@@ -198,7 +202,7 @@ actor {
   };
 
   // Upload document - USER ONLY
-  public shared ({ caller }) func uploadDocument(filename : Text, fileSize : Nat, accessCode : Text, encryptionKey : Text, blob : Storage.ExternalBlob, mimeType : Text) : async Text {
+  public shared ({ caller }) func uploadDocument(filename : Text, fileSize : Nat, accessCode : Text, encryptionKey : Text, blob : Storage.ExternalBlob, mimeType : Text, folders : [Text], tags : [Text]) : async Text {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
       Runtime.trap("Unauthorized: Only users can upload documents");
     };
@@ -229,6 +233,8 @@ actor {
       encryptionKey;
       blob;
       mimeType;
+      folders;
+      tags;
     };
 
     documents.add(id, metadata);
@@ -636,6 +642,7 @@ actor {
       case (#preview) { "preview" };
       case (#publicAccess) { "publicAccess" };
       case (#delete) { "delete" };
+      case (#folderTagUpdate) { "folderTagUpdate" };
     };
   };
 
@@ -715,6 +722,57 @@ actor {
     let filteredEvents = userEvents.filter(func(event) { event.eventType == eventType });
 
     filteredEvents.sort(func(a, b) { if (a.timestamp > b.timestamp) { #less } else if (a.timestamp < b.timestamp) { #greater } else { #equal } });
+  };
+
+  // List distinct folder names used by the calling user - USER ONLY
+  public query ({ caller }) func listUserFolders() : async [Text] {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can list folders");
+    };
+    let seen = Set.empty<Text>();
+    for ((_, metadata) in documents.entries()) {
+      if (metadata.owner == caller) {
+        for (folder in metadata.folders.values()) {
+          seen.add(folder);
+        };
+      };
+    };
+    seen.toArray()
+  };
+
+  // List distinct tag names used by the calling user - USER ONLY
+  public query ({ caller }) func listUserTags() : async [Text] {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can list tags");
+    };
+    let seen = Set.empty<Text>();
+    for ((_, metadata) in documents.entries()) {
+      if (metadata.owner == caller) {
+        for (tag in metadata.tags.values()) {
+          seen.add(tag);
+        };
+      };
+    };
+    seen.toArray()
+  };
+
+  // Update folders and tags on an existing document - OWNER ONLY
+  public shared ({ caller }) func updateDocumentFoldersTags(id : Text, folders : [Text], tags : [Text]) : async { #ok : DocumentMetadata; #err : Text } {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      return #err("Unauthorized: Only users can update documents");
+    };
+    switch (documents.get(id)) {
+      case (null) { #err("Document not found") };
+      case (?metadata) {
+        if (metadata.owner != caller) {
+          return #err("Unauthorized: Can only update your own documents");
+        };
+        let updated : DocumentMetadata = { metadata with folders; tags };
+        documents.add(id, updated);
+        recordFileEvent(caller, #folderTagUpdate, id, metadata.filename);
+        #ok(updated)
+      };
+    }
   };
 
   // Get file history by file ID - OWNER OR ADMIN ONLY

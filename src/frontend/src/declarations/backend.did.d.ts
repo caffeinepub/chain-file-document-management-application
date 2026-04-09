@@ -14,8 +14,10 @@ export interface DocumentMetadata {
   'id' : string,
   'owner' : Principal,
   'blob' : ExternalBlob,
+  'tags' : Array<string>,
   'accessCode' : string,
   'mimeType' : string,
+  'folders' : Array<string>,
   'fileSize' : bigint,
   'uploadTimestamp' : Time,
   'filename' : string,
@@ -34,7 +36,8 @@ export type FileEventType = { 'publicAccess' : null } |
   { 'preview' : null } |
   { 'delete' : null } |
   { 'upload' : null } |
-  { 'download' : null };
+  { 'download' : null } |
+  { 'folderTagUpdate' : null };
 export interface PaymentTransaction {
   'verified' : boolean,
   'timestamp' : Time,
@@ -127,13 +130,29 @@ export interface _SERVICE {
   'getUserProfile' : ActorMethod<[Principal], [] | [UserProfile]>,
   'isCallerAdmin' : ActorMethod<[], boolean>,
   'listUserDocuments' : ActorMethod<[], Array<DocumentMetadata>>,
+  'listUserFolders' : ActorMethod<[], Array<string>>,
+  'listUserTags' : ActorMethod<[], Array<string>>,
   'recordDocumentDownload' : ActorMethod<[string], undefined>,
   'recordDocumentPreview' : ActorMethod<[string], undefined>,
   'recordPublicDownload' : ActorMethod<[string], undefined>,
   'recordPublicPreview' : ActorMethod<[string], undefined>,
   'saveCallerUserProfile' : ActorMethod<[UserProfile], undefined>,
+  'updateDocumentFoldersTags' : ActorMethod<
+    [string, Array<string>, Array<string>],
+    { 'ok' : DocumentMetadata } |
+      { 'err' : string }
+  >,
   'uploadDocument' : ActorMethod<
-    [string, bigint, string, string, ExternalBlob, string],
+    [
+      string,
+      bigint,
+      string,
+      string,
+      ExternalBlob,
+      string,
+      Array<string>,
+      Array<string>,
+    ],
     string
   >,
   'validateAccessCode' : ActorMethod<[string], boolean>,

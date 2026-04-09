@@ -3,16 +3,28 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { AlertCircle, Check, FileText, Upload } from "lucide-react";
+import {
+  AlertCircle,
+  Check,
+  FileText,
+  FolderOpen,
+  Tag,
+  Upload,
+  X,
+} from "lucide-react";
 import { useCallback, useState } from "react";
 import { toast } from "sonner";
 import { ExternalBlob } from "../backend";
 import {
   useCheckStorageLimit,
   useGetUserAnalytics,
+  useListUserFolders,
+  useListUserTags,
+  useUpdateDocumentFoldersTags,
   useUploadDocument,
 } from "../hooks/useQueries";
 import CryptoPaymentModal from "./CryptoPaymentModal";
+import { tagColorClass } from "./DocumentList";
 
 interface UploadDocumentProps {
   onSuccess?: () => void;
@@ -36,9 +48,30 @@ export default function UploadDocument({ onSuccess }: UploadDocumentProps) {
     mimeType: string;
   } | null>(null);
 
+  // Folder / tag state
+  const [folderInput, setFolderInput] = useState("");
+  const [selectedFolders, setSelectedFolders] = useState<string[]>([]);
+  const [tagInput, setTagInput] = useState("");
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+
   const uploadDocument = useUploadDocument();
+  const updateDocumentFoldersTags = useUpdateDocumentFoldersTags();
   const checkStorageLimit = useCheckStorageLimit();
   const { data: userAnalytics } = useGetUserAnalytics();
+  const { data: existingFolders = [] } = useListUserFolders();
+  const { data: existingTags = [] } = useListUserTags();
+
+  const addFolder = (val: string) => {
+    const v = val.trim();
+    if (v && !selectedFolders.includes(v)) setSelectedFolders((p) => [...p, v]);
+    setFolderInput("");
+  };
+
+  const addTag = (val: string) => {
+    const v = val.trim();
+    if (v && !selectedTags.includes(v)) setSelectedTags((p) => [...p, v]);
+    setTagInput("");
+  };
 
   const generateAccessCode = () =>
     Math.floor(100000 + Math.random() * 900000).toString();
@@ -109,6 +142,21 @@ export default function UploadDocument({ onSuccess }: UploadDocumentProps) {
   }) => {
     try {
       const docId = await uploadDocument.mutateAsync(uploadData);
+      // Persist folders/tags assigned at upload time
+      if (selectedFolders.length > 0 || selectedTags.length > 0) {
+        try {
+          await updateDocumentFoldersTags.mutateAsync({
+            id: docId,
+            folders: selectedFolders,
+            tags: selectedTags,
+          });
+        } catch (labelError: unknown) {
+          const err = labelError as Error;
+          toast.warning(
+            `Document uploaded, but failed to apply labels: ${err.message || "unknown error"}`,
+          );
+        }
+      }
       setUploadedDocId(docId);
       setAccessCode(uploadData.accessCode);
       toast.success("Document uploaded successfully!");
@@ -196,6 +244,8 @@ export default function UploadDocument({ onSuccess }: UploadDocumentProps) {
     setAccessCode(null);
     setUploadProgress(0);
     setPendingUpload(null);
+    setSelectedFolders([]);
+    setSelectedTags([]);
   };
 
   if (uploadedDocId && accessCode) {
@@ -360,6 +410,134 @@ export default function UploadDocument({ onSuccess }: UploadDocumentProps) {
               className="border-border bg-input text-foreground placeholder:text-muted-foreground focus-visible:ring-accent/30 focus-visible:border-accent"
               data-ocid="filename-input"
             />
+          </div>
+
+          {/* Folder assignment */}
+          <div className="space-y-2">
+            <Label className="text-sm font-medium text-foreground flex items-center gap-1.5">
+              <FolderOpen className="h-3.5 w-3.5 text-muted-foreground" />
+              Folders{" "}
+              <span className="text-muted-foreground font-normal">
+                (optional)
+              </span>
+            </Label>
+            {selectedFolders.length > 0 && (
+              <div className="flex flex-wrap gap-1.5">
+                {selectedFolders.map((f) => (
+                  <span
+                    key={f}
+                    className="inline-flex items-center gap-1 rounded-md bg-muted border border-border text-xs px-2 py-0.5 text-foreground font-medium"
+                  >
+                    {f}
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setSelectedFolders((p) => p.filter((x) => x !== f))
+                      }
+                      className="ml-0.5 hover:text-destructive transition-colors"
+                      aria-label={`Remove folder ${f}`}
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+            <div className="flex gap-1.5">
+              <Input
+                placeholder="Add folder…"
+                value={folderInput}
+                onChange={(e) => setFolderInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    addFolder(folderInput);
+                  }
+                }}
+                list="upload-folder-suggestions"
+                className="border-border bg-input text-foreground placeholder:text-muted-foreground focus-visible:ring-accent/30 focus-visible:border-accent"
+                data-ocid="folder-input"
+              />
+              <datalist id="upload-folder-suggestions">
+                {existingFolders
+                  .filter((f) => !selectedFolders.includes(f))
+                  .map((f) => (
+                    <option key={f} value={f} />
+                  ))}
+              </datalist>
+              <Button
+                type="button"
+                variant="outline"
+                className="shrink-0 border-border text-sm font-medium"
+                onClick={() => addFolder(folderInput)}
+              >
+                Add
+              </Button>
+            </div>
+          </div>
+
+          {/* Tag assignment */}
+          <div className="space-y-2">
+            <Label className="text-sm font-medium text-foreground flex items-center gap-1.5">
+              <Tag className="h-3.5 w-3.5 text-muted-foreground" />
+              Tags{" "}
+              <span className="text-muted-foreground font-normal">
+                (optional)
+              </span>
+            </Label>
+            {selectedTags.length > 0 && (
+              <div className="flex flex-wrap gap-1.5">
+                {selectedTags.map((tag) => (
+                  <span
+                    key={tag}
+                    className={`inline-flex items-center gap-1 rounded-full border text-xs px-2 py-0.5 font-medium ${tagColorClass(tag)}`}
+                  >
+                    {tag}
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setSelectedTags((p) => p.filter((x) => x !== tag))
+                      }
+                      className="ml-0.5 hover:opacity-70 transition-opacity"
+                      aria-label={`Remove tag ${tag}`}
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+            <div className="flex gap-1.5">
+              <Input
+                placeholder="Add tag…"
+                value={tagInput}
+                onChange={(e) => setTagInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    addTag(tagInput);
+                  }
+                }}
+                list="upload-tag-suggestions"
+                className="border-border bg-input text-foreground placeholder:text-muted-foreground focus-visible:ring-accent/30 focus-visible:border-accent"
+                data-ocid="tag-input"
+              />
+              <datalist id="upload-tag-suggestions">
+                {existingTags
+                  .filter((t) => !selectedTags.includes(t))
+                  .map((t) => (
+                    <option key={t} value={t} />
+                  ))}
+              </datalist>
+              <Button
+                type="button"
+                variant="outline"
+                className="shrink-0 border-border text-sm font-medium"
+                onClick={() => addTag(tagInput)}
+              >
+                Add
+              </Button>
+            </div>
           </div>
 
           {/* Progress bar */}

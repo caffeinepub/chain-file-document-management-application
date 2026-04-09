@@ -14,6 +14,8 @@ export interface DocumentMetadata {
   encryptionKey: string;
   uploadTimestamp: bigint;
   hash?: string;
+  folders?: string[];
+  tags?: string[];
 }
 
 // String-based event type matching backend enum values
@@ -66,6 +68,13 @@ export interface ActorInterface {
   getCallerUserProfile(): Promise<UserProfile>;
   saveCallerUserProfile(profile: UserProfile): Promise<void>;
   listUserDocuments(): Promise<DocumentMetadata[]>;
+  listUserFolders(): Promise<string[]>;
+  listUserTags(): Promise<string[]>;
+  updateDocumentFoldersTags(
+    id: string,
+    folders: string[],
+    tags: string[],
+  ): Promise<DocumentMetadata | { err: string }>;
   checkStorageLimit(fileSize: bigint): Promise<StorageLimitCheck>;
   confirmPayment(transactionId: string, amount: bigint): Promise<boolean>;
   getPaymentHistory(): Promise<PaymentRecord[]>;

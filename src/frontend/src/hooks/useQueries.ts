@@ -516,3 +516,80 @@ export function useGetFileHistoryByFileId() {
     },
   });
 }
+
+export function useListUserFolders() {
+  const { actor, isFetching: actorFetching } = useActor();
+  const { identity } = useInternetIdentity();
+  const isAuthenticated = !!identity && !identity.getPrincipal().isAnonymous();
+
+  return useQuery<string[]>({
+    queryKey: ["userFolders", identity?.getPrincipal().toString()],
+    queryFn: async () => {
+      if (!actor || !isAuthenticated) return [];
+      try {
+        return await actor.listUserFolders();
+      } catch (error: any) {
+        console.error("Error listing folders:", error);
+        return [];
+      }
+    },
+    enabled: !!actor && !actorFetching && isAuthenticated,
+    staleTime: 15000,
+  });
+}
+
+export function useListUserTags() {
+  const { actor, isFetching: actorFetching } = useActor();
+  const { identity } = useInternetIdentity();
+  const isAuthenticated = !!identity && !identity.getPrincipal().isAnonymous();
+
+  return useQuery<string[]>({
+    queryKey: ["userTags", identity?.getPrincipal().toString()],
+    queryFn: async () => {
+      if (!actor || !isAuthenticated) return [];
+      try {
+        return await actor.listUserTags();
+      } catch (error: any) {
+        console.error("Error listing tags:", error);
+        return [];
+      }
+    },
+    enabled: !!actor && !actorFetching && isAuthenticated,
+    staleTime: 15000,
+  });
+}
+
+export function useUpdateDocumentFoldersTags() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+  const { identity } = useInternetIdentity();
+
+  return useMutation({
+    mutationFn: async ({
+      id,
+      folders,
+      tags,
+    }: { id: string; folders: string[]; tags: string[] }) => {
+      if (!actor) throw new Error("Actor not available");
+      try {
+        const result = await actor.updateDocumentFoldersTags(id, folders, tags);
+        if ("err" in result) throw new Error(result.err);
+        return result;
+      } catch (error: any) {
+        console.error("Error updating folders/tags:", error);
+        throw new Error(error.message || "Failed to update folders/tags.");
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["userDocuments", identity?.getPrincipal().toString()],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["userFolders", identity?.getPrincipal().toString()],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["userTags", identity?.getPrincipal().toString()],
+      });
+    },
+  });
+}

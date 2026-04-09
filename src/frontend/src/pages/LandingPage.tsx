@@ -214,7 +214,7 @@ export default function LandingPage({
               Upload, encrypt, and share documents with confidence. Access your
               files from any device with{" "}
               <span className="text-foreground font-semibold">
-                military-grade security
+                top cryptographic security
               </span>{" "}
               powered by the Internet Computer.
             </p>

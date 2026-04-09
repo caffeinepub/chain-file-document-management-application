@@ -27,8 +27,10 @@ export interface DocumentMetadata {
     id: string;
     owner: Principal;
     blob: ExternalBlob;
+    tags: Array<string>;
     accessCode: string;
     mimeType: string;
+    folders: Array<string>;
     fileSize: bigint;
     uploadTimestamp: Time;
     filename: string;
@@ -48,7 +50,8 @@ export enum FileEventType {
     preview = "preview",
     delete_ = "delete",
     upload = "upload",
-    download = "download"
+    download = "download",
+    folderTagUpdate = "folderTagUpdate"
 }
 export enum UserRole {
     admin = "admin",
@@ -102,11 +105,20 @@ export interface backendInterface {
     getUserProfile(user: Principal): Promise<UserProfile | null>;
     isCallerAdmin(): Promise<boolean>;
     listUserDocuments(): Promise<Array<DocumentMetadata>>;
+    listUserFolders(): Promise<Array<string>>;
+    listUserTags(): Promise<Array<string>>;
     recordDocumentDownload(id: string): Promise<void>;
     recordDocumentPreview(id: string): Promise<void>;
     recordPublicDownload(code: string): Promise<void>;
     recordPublicPreview(code: string): Promise<void>;
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
-    uploadDocument(filename: string, fileSize: bigint, accessCode: string, encryptionKey: string, blob: ExternalBlob, mimeType: string): Promise<string>;
+    updateDocumentFoldersTags(id: string, folders: Array<string>, tags: Array<string>): Promise<{
+        __kind__: "ok";
+        ok: DocumentMetadata;
+    } | {
+        __kind__: "err";
+        err: string;
+    }>;
+    uploadDocument(filename: string, fileSize: bigint, accessCode: string, encryptionKey: string, blob: ExternalBlob, mimeType: string, folders: Array<string>, tags: Array<string>): Promise<string>;
     validateAccessCode(code: string): Promise<boolean>;
 }

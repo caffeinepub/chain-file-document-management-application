@@ -1,27 +1,25 @@
 {
-  "overview": "Chain File is a decentralized document management app built on the Internet Computer. Users can securely upload, preview, share, and download files using unique access codes. Features include 1 GB free storage, encrypted file storage, ICP crypto payments for expanded capacity, file history with on-chain hashes, and real-time analytics.",
+  "overview": "Chain File is a decentralized file storage and sharing app on the Internet Computer. Users can upload, organize, and share files securely using unique access codes, with folder and tag organization, integrated crypto payments, and full file history tracking.",
   "features": [
-    "Secure file upload with auto-generated access codes",
-    "File preview and download (PDF, images, text)",
-    "Decentralized storage on the Internet Computer",
-    "1 GB free storage per user with crypto payment unlock",
-    "ICP wallet payments via Plug, Stoic, and Internet Identity",
-    "File history with timestamped events and on-chain hash links",
-    "Real-time user and global analytics",
-    "Tabbed dashboard with Documents, Upload, Analytics, and History",
-    "Account dropdown with Dashboard navigation and logout",
-    "Custom metallic 3D logo with matching browser favicon"
+    "Secure file uploads with unique access codes",
+    "Folder and tag organization for documents",
+    "Auto-colored tag pills on document cards",
+    "Crypto payments (ICP, ckBTC, ckETH) for storage beyond 1 GB",
+    "File history with on-chain hash tracking",
+    "Global and per-user analytics dashboard",
+    "Internet Identity authentication",
+    "Save files from URL",
+    "File preview for images, PDFs, and text"
   ],
   "category": "productivity",
   "tags": [
     "file-storage",
     "decentralized",
-    "icp",
-    "crypto-payments",
+    "internet-computer",
     "document-management",
-    "access-codes",
-    "blockchain",
+    "crypto-payments",
+    "icp",
     "web3"
   ],
-  "last_updated": "2026-04-09T00:05:00.954Z"
+  "last_updated": "2026-04-09T00:45:10.784Z"
 }
