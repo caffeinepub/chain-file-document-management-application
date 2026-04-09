@@ -1,4 +1,4 @@
-// Version: 3.0.0
+// Version: 1.0.0
 type Data__791452850<K, V> =
   {var count : Nat__490723111; kvs : [var ?(K, V)]};
 type DocumentMetadata__268023399 =
@@ -40,29 +40,6 @@ type Nat__490723111 = Nat__920180692;
 type Nat__920180692 = Nat;
 type Node__46230540<K, V> =
   {#internal : Internal__8484328<K, V>; #leaf : Leaf__809889148<K, V>};
-type OldDocumentMetadata__831936413 =
-  {
-    accessCode : Text;
-    blob : ExternalBlob__246066408;
-    encryptionKey : Text;
-    fileSize : Nat;
-    filename : Text;
-    id : Text;
-    mimeType : Text;
-    owner : Principal;
-    uploadTimestamp : Time__900049286
-  };
-type OldFileEventType__350886389 =
-  {#delete; #download; #preview; #publicAccess; #upload};
-type OldFileEvent__142012757 =
-  {
-    eventType : OldFileEventType__350886389;
-    fileId : Text;
-    fileName : Text;
-    hash : Text;
-    timestamp : Time__900049286;
-    user : Principal
-  };
 type PaymentTransaction__389674112 =
   {
     amount : Nat;
@@ -74,32 +51,7 @@ type Time__796480547 = Int__270357528;
 type Time__900049286 = Time__796480547;
 type UserProfile__491224006 = {name : Text};
 type UserRole__1054455867 = {#admin; #guest; #user};
-actor ({
-  stable STORAGE_LIMIT : Nat;
-  stable accessCodeMap :
-    {var root : Node__46230540<Text, Text>; var size : Nat__490723111};
-  stable accessControlState :
-    {
-      var adminAssigned : Bool;
-      userRoles : Map__605269027<Principal, UserRole__1054455867>
-    };
-  in documents : Map__605269027<Text, OldDocumentMetadata__831936413>;
-  in fileHistory : Map__605269027<Text, [OldFileEvent__142012757]>;
-  stable userPaymentStatus :
-    {var root : Node__46230540<Principal, Bool>; var size : Nat__490723111};
-  stable userPaymentTransactions :
-    {
-      var root : Node__46230540<Principal, [PaymentTransaction__389674112]>;
-      var size : Nat__490723111
-    };
-  stable userProfiles :
-    {
-      var root : Node__46230540<Principal, UserProfile__491224006>;
-      var size : Nat__490723111
-    };
-  stable userStorageUsage :
-    {var root : Node__46230540<Principal, Nat>; var size : Nat__490723111}
-}, {
+actor {
   stable STORAGE_LIMIT : Nat;
   stable accessCodeMap :
     {var root : Node__46230540<Text, Text>; var size : Nat__490723111};
@@ -132,4 +84,4 @@ actor ({
     };
   stable userStorageUsage :
     {var root : Node__46230540<Principal, Nat>; var size : Nat__490723111}
-}) ;
+};

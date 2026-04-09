@@ -20,7 +20,6 @@ import {
   useGetUserAnalytics,
   useListUserFolders,
   useListUserTags,
-  useUpdateDocumentFoldersTags,
   useUploadDocument,
 } from "../hooks/useQueries";
 import CryptoPaymentModal from "./CryptoPaymentModal";
@@ -46,6 +45,8 @@ export default function UploadDocument({ onSuccess }: UploadDocumentProps) {
     encryptionKey: string;
     blob: ExternalBlob;
     mimeType: string;
+    folders: string[];
+    tags: string[];
   } | null>(null);
 
   // Folder / tag state
@@ -55,7 +56,6 @@ export default function UploadDocument({ onSuccess }: UploadDocumentProps) {
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
 
   const uploadDocument = useUploadDocument();
-  const updateDocumentFoldersTags = useUpdateDocumentFoldersTags();
   const checkStorageLimit = useCheckStorageLimit();
   const { data: userAnalytics } = useGetUserAnalytics();
   const { data: existingFolders = [] } = useListUserFolders();
@@ -139,24 +139,11 @@ export default function UploadDocument({ onSuccess }: UploadDocumentProps) {
     encryptionKey: string;
     blob: ExternalBlob;
     mimeType: string;
+    folders: string[];
+    tags: string[];
   }) => {
     try {
       const docId = await uploadDocument.mutateAsync(uploadData);
-      // Persist folders/tags assigned at upload time
-      if (selectedFolders.length > 0 || selectedTags.length > 0) {
-        try {
-          await updateDocumentFoldersTags.mutateAsync({
-            id: docId,
-            folders: selectedFolders,
-            tags: selectedTags,
-          });
-        } catch (labelError: unknown) {
-          const err = labelError as Error;
-          toast.warning(
-            `Document uploaded, but failed to apply labels: ${err.message || "unknown error"}`,
-          );
-        }
-      }
       setUploadedDocId(docId);
       setAccessCode(uploadData.accessCode);
       toast.success("Document uploaded successfully!");
@@ -205,6 +192,8 @@ export default function UploadDocument({ onSuccess }: UploadDocumentProps) {
           encryptionKey,
           blob,
           mimeType: getMimeType(file.name),
+          folders: selectedFolders,
+          tags: selectedTags,
         });
         setRequiredStorageBytes(totalRequired);
         setShowPaymentModal(true);
@@ -224,6 +213,8 @@ export default function UploadDocument({ onSuccess }: UploadDocumentProps) {
         encryptionKey,
         blob,
         mimeType: getMimeType(file.name),
+        folders: selectedFolders,
+        tags: selectedTags,
       });
     } catch (error: unknown) {
       const err = error as Error;

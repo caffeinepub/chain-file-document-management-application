@@ -12,9 +12,9 @@ import Array "mo:core/Array";
 import Nat "mo:core/Nat";
 import Char "mo:core/Char";
 import Set "mo:core/Set";
-import Migration "migration";
 
-(with migration = Migration.run)
+
+
 actor {
   // Initialize the user system state
   let accessControlState = AccessControl.initState();

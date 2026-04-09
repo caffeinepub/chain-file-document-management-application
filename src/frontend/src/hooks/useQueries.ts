@@ -180,6 +180,8 @@ export function useUploadDocument() {
       encryptionKey,
       blob,
       mimeType,
+      folders = [],
+      tags = [],
     }: {
       filename: string;
       fileSize: bigint;
@@ -187,6 +189,8 @@ export function useUploadDocument() {
       encryptionKey: string;
       blob: ExternalBlob;
       mimeType: string;
+      folders?: string[];
+      tags?: string[];
     }) => {
       if (!actor) throw new Error("Actor not available");
       try {
@@ -197,6 +201,8 @@ export function useUploadDocument() {
           encryptionKey,
           blob,
           mimeType,
+          folders,
+          tags,
         );
       } catch (error: any) {
         console.error("Error uploading document:", error);

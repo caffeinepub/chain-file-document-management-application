@@ -85,6 +85,8 @@ export interface ActorInterface {
     encryptionKey: string,
     blob: ExternalBlob,
     mimeType: string,
+    folders: string[],
+    tags: string[],
   ): Promise<string>;
   validateAccessCode(code: string): Promise<boolean>;
   getDocumentMetadata(id: string): Promise<DocumentMetadata | null>;
